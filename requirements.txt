@@ -1,0 +1,7 @@
+# Python 3.11 on an Intel Mac. tensorflow 2.16.2 is the last release with
+# macOS x86_64 wheels; later versions only ship for Apple silicon and Linux.
+tensorflow==2.16.2
+tensorflow-hub>=0.16
+numpy<2
+pillow
+opencv-python
