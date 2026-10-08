@@ -77,6 +77,6 @@ MobileNetV2 1.0 at 160 px initialised from timm's `mobilenetv2_100.ra_in1k` Imag
 
 Weights Apache-2.0, trained in the species-classifiers repository. Initialised from timm's ImageNet weights (Apache-2.0). Training images from the iNaturalist 2021 competition dataset; species names and taxonomy in `labels.txt` and `classes.json` come from it. The same files, with checksums, are in [GitHub release v0.1.0](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0).
 
-Also on Kaggle Models beside Google's originals: https://www.kaggle.com/models/mgraham0/species-classifiers
+Also a public Edge Impulse project that deploys straight to supported boards: https://studio.edgeimpulse.com/public/1133229/latest. And on Kaggle Models beside Google's originals: https://www.kaggle.com/models/mgraham0/species-classifiers
 
 Not affiliated with iNaturalist or Google.

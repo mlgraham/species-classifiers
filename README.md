@@ -108,16 +108,20 @@ crop. The files are in `models/students/<taxon>/` with `labels.txt` (one
 (the full taxonomy per class, for roll-ups). They are also on Hugging Face
 with model cards, hash-identical to the
 [v0.1.0 release](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0):
-[species-classifier-mammals](https://huggingface.co/mlgraham/species-classifier-mammals)
-and
+[species-classifier-mammals](https://huggingface.co/mlgraham/species-classifier-mammals),
 [species-classifier-arachnids](https://huggingface.co/mlgraham/species-classifier-arachnids),
+[species-classifier-herps](https://huggingface.co/mlgraham/species-classifier-herps)
+and
+[species-classifier-fungi](https://huggingface.co/mlgraham/species-classifier-fungi),
 and on Kaggle Models beside Google's originals as
 [mgraham0/species-classifiers](https://www.kaggle.com/models/mgraham0/species-classifiers)
-(TfLite variations `mammals` and `arachnids`). For board users without a
-toolchain, both are public Edge Impulse projects that deploy straight to
-supported hardware:
-[mammals](https://studio.edgeimpulse.com/public/1132640/latest) and
-[arachnids](https://studio.edgeimpulse.com/public/1132643/latest). For the
+(TfLite variations `mammals`, `arachnids`, `herps` and `fungi`). For board
+users without a toolchain, all four are public Edge Impulse projects that
+deploy straight to supported hardware:
+[mammals](https://studio.edgeimpulse.com/public/1132640/latest),
+[arachnids](https://studio.edgeimpulse.com/public/1132643/latest),
+[herps](https://studio.edgeimpulse.com/public/1133229/latest) and
+[fungi](https://studio.edgeimpulse.com/public/1133231/latest). For the
 Seeed Grove Vision AI V2, `<taxon>_int8_vela.tflite` in the release is the
 Ethos-U55 build compiled with Seeed's Himax configuration; upload it with
 SenseCraft AI's Model Assistant (the "Upload Model" step there needs the
