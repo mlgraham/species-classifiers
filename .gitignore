@@ -10,3 +10,14 @@ models/tflite/
 # your own photos and webcam captures
 data/datasets/
 data/captures/
+
+# private working notes, not part of the project
+.ledger/
+CLAUDE.md
+
+# derived training artifacts
+data/manifests/
+models/torch/
+
+# Edge TPU compiler output (regenerate with scripts/edgetpu_compile.sh)
+models/tflite/*_edgetpu.log

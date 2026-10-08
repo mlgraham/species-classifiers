@@ -17,6 +17,13 @@ Kaggle model cards:
 
 The label maps in models/tfhub/*/labelmap.csv accompany those models.
 
+The mammal and arachnid classifiers under models/students/ were trained in
+this repository (see README.md, "The students") starting from the ImageNet
+weights mobilenetv2_100.ra_in1k published by the timm project (Ross Wightman,
+Apache License 2.0), on images from the iNaturalist 2021 competition dataset.
+Their label files and classes.json carry the species names and taxonomy from
+that dataset.
+
 The models were trained by Google on images from the iNaturalist 2017
 competition dataset organised by Visipedia. iNaturalist is a joint
 initiative of the California Academy of Sciences and the National

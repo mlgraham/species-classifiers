@@ -4,6 +4,7 @@
     python scripts/webcam.py                         # insects, stock model
     python scripts/webcam.py --name birds_V1
     python scripts/webcam.py --model models/keras/my_finetune.keras --labels models/keras/my_finetune_labels.txt
+    python scripts/webcam.py --model models/students/arachnids/arachnids_int8.tflite --labels models/students/arachnids/labels.txt
 
 Keys:  q quit   s save the current frame to data/captures/
 
@@ -20,6 +21,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labels import ROOT, load_finetuned_labels, load_labels  # noqa: E402
+from tflite_runner import load_any  # noqa: E402
 
 
 def main():
@@ -31,10 +33,8 @@ def main():
     ap.add_argument("--threshold", type=float, default=0.15, help="hide predictions below this probability")
     args = ap.parse_args()
 
-    import tensorflow as tf
-
     model_path = args.model or os.path.join(ROOT, "models", "keras", f"{args.name}.keras")
-    model = tf.keras.models.load_model(model_path)
+    model = load_any(model_path)
     labels = load_finetuned_labels(args.labels) if args.labels else load_labels(args.name)
     size = model.input_shape[1]
 

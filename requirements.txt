@@ -5,3 +5,10 @@ tensorflow-hub>=0.16
 numpy<2
 pillow
 opencv-python
+
+# distillation (scripts/teacher_labels.py, distill.py, torch_to_keras.py).
+# torch 2.2.2 is the last release with Intel Mac wheels; it drives the Radeon via MPS.
+torch==2.2.2
+torchvision==0.17.2
+timm
+open_clip_torch
