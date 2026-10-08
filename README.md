@@ -2,8 +2,8 @@
 
 Species classifiers small enough for microcontrollers and the Coral Edge
 TPU: Google's three iNaturalist models from the discontinued AIY Vision Kit,
-rescued as trainable weights, plus three new ones trained here on the same
-recipe for the taxa Google never shipped. All six are plain MobileNetV2
+rescued as trainable weights, plus four new ones trained here on the same
+recipe for the taxa Google never shipped. All seven are plain MobileNetV2
 with a full-integer int8 export and one deployment contract.
 
 | Model | Classes | Input | int8 file | Where it came from |
@@ -14,9 +14,10 @@ with a full-integer int8 export and one deployment contract.
 | `mammals` | 246 species | 160 px | 3.0 MB | trained here on iNat2021, `models/students/mammals/` |
 | `arachnids` | 153 species | 160 px | 2.9 MB | trained here on iNat2021, `models/students/arachnids/` |
 | `herps` | 483 species (313 reptiles, 170 amphibians) | 160 px | 3.3 MB | trained here on iNat2021, `models/students/herps/` |
+| `fungi` | 341 species | 160 px | 3.1 MB | trained here on iNat2021, `models/students/fungi/`. Not for edibility decisions |
 
 Nothing here needs the Vision Bonnet. Everything runs on a laptop CPU, the
-int8 files run as is on anything with TensorFlow Lite Micro, and all six
+int8 files run as is on anything with TensorFlow Lite Micro, and all seven
 compile for the Edge TPU with every op mapped.
 
 ## Where the weights came from
@@ -81,21 +82,25 @@ python scripts/classify.py --model models/students/arachnids/arachnids_int8.tfli
 ## The students
 
 Google only ever published insects, plants, birds and food. The mammal,
-arachnid and herp (reptile and amphibian) models fill three of the gaps with
-the same shape of model, so the same files, scripts and deployment contract
-apply.
+arachnid, herp (reptile and amphibian) and fungus models fill four of the
+gaps with the same shape of model, so the same files, scripts and deployment
+contract apply.
 
-| | mammals | arachnids | herps |
-|---|---|---|---|
-| Species | 246 | 153 | 483 |
-| Training images (iNat2021 train) | 68,917 | 40,687 | 133,082 |
-| Validation images (iNat2021 val, 10 per species) | 2,460 | 1,530 | 4,830 |
-| int8 top-1, colour | 54.9% | 62.3% | 46.0% |
-| int8 top-5, colour | 80.5% | 86.4% | 74.4% |
-| int8 top-1, grayscale input | 44.9% | not measured | 34.4% |
-| PyTorch checkpoint top-1 | 56.1% | 64.4% | 46.6% |
-| Edge TPU | all ops mapped, 3.0 MiB on-chip | all ops mapped, 2.9 MiB on-chip | all ops mapped, 3.4 MiB on-chip |
-| CPU latency, this laptop | 14 ms | 9 ms | 9 ms |
+**The fungi model is not for edibility decisions.** It names a species from
+a photo with the accuracy in the table, which means a wrong top-1 answer one
+time in four. Never eat a mushroom on the strength of a classifier's output.
+
+| | mammals | arachnids | herps | fungi |
+|---|---|---|---|---|
+| Species | 246 | 153 | 483 | 341 |
+| Training images (iNat2021 train) | 68,917 | 40,687 | 133,082 | 90,048 |
+| Validation images (iNat2021 val, 10 per species) | 2,460 | 1,530 | 4,830 | 3,410 |
+| int8 top-1, colour | 54.9% | 62.3% | 46.0% | 74.0% |
+| int8 top-5, colour | 80.5% | 86.4% | 74.4% | 93.5% |
+| int8 top-1, grayscale input | 44.9% | not measured | 34.4% | not measured |
+| PyTorch checkpoint top-1 | 56.1% | 64.4% | 46.6% | 74.5% |
+| Edge TPU | all ops mapped, 3.0 MiB on-chip | all ops mapped, 2.9 MiB on-chip | all ops mapped, 3.4 MiB on-chip | all ops mapped, 3.2 MiB on-chip |
+| CPU latency, this laptop | 14 ms | 9 ms | 9 ms | 9 ms |
 
 Measured with `scripts/eval_tflite.py` on the int8 file at the 87.5% centre
 crop. The files are in `models/students/<taxon>/` with `labels.txt` (one
@@ -126,7 +131,7 @@ mammals and herps) 20% random grayscale so the model holds up on a monochrome ca
 Trained in PyTorch on the laptop's Radeon through MPS, moved into Keras with
 a positional weight transplant that verifies to a millionth, then exported
 exactly like the stock models. About 2.5 hours for mammals, 1.5 for
-arachnids, 6 for herps.
+arachnids, 6 for herps, 4 for fungi.
 
 **How they compare with Google's models.** Scored the same way, int8 file on
 iNat2021 validation images at the 87.5% crop. The stock models are scored on
@@ -142,6 +147,7 @@ data older (2017):
 | new `arachnids` | 153 | 1,530 | 62.3% | 86.4% |
 | new `mammals` | 246 | 2,460 | 54.9% | 80.5% |
 | new `herps` | 483 | 4,830 | 46.0% | 74.4% |
+| new `fungi` | 341 | 3,410 | 74.0% | 93.5% |
 
 The stock int8 files are calibrated on 300 iNat2021 validation images of
 their own taxon; calibrating the plant model on a handful of insect photos,
@@ -150,7 +156,9 @@ representative `--rep-dir`. Mammals and arachnids land in the same band as the o
 either side on top-1, and a little stronger on top-5, with the caveat that
 they have fewer classes to choose from. Herps does not: reptiles and
 amphibians share one 483-class head and it scores 46% against the 55% bar
-set for it before training, so treat it as a first cut. Measure your own with
+set for it before training, so treat it as a first cut. Fungi scores the
+highest of the set; many of its 341 species have a distinctive shape and
+colour, and 10 validation images per species is a small test. Measure your own with
 `scripts/eval_stock_on_inat2021.py` and `scripts/eval_tflite.py`.
 
 **What didn't work, measured on the 50-image-per-species mini split.**
@@ -270,12 +278,12 @@ Everything downstream of this repo consumes one artifact: a full-integer
 TFLite file from `scripts/export_tflite.py`. If you are converting it for a
 board we don't cover, these are the facts you need.
 
-| | Stock models | Students (mammals, arachnids, herps) and your fine-tunes |
+| | Stock models | Students (mammals, arachnids, herps, fungi) and your fine-tunes |
 |---|---|---|
 | Input tensor | `[1, 224, 224, 3]` uint8, RGB, NHWC | `[1, 160, 160, 3]` uint8, RGB, NHWC (default) |
 | Input range | 0 to 255, no normalization. The model rescales to -1..1 internally | same |
 | Input quantization | scale 1.0, zero point 0 | same |
-| Output tensor | `[1, 1022]` uint8 for insects (1022 = 1021 species + background), `[1, 2102]` plants, `[1, 965]` birds | `[1, 246]` mammals, `[1, 153]` arachnids, `[1, 483]` herps; `[1, N]` with N = lines in the labels file for your own |
+| Output tensor | `[1, 1022]` uint8 for insects (1022 = 1021 species + background), `[1, 2102]` plants, `[1, 965]` birds | `[1, 246]` mammals, `[1, 153]` arachnids, `[1, 483]` herps, `[1, 341]` fungi; `[1, N]` with N = lines in the labels file for your own |
 | Output meaning | softmax probabilities, quantized with scale 1/256 and zero point 0, so `prob = value / 256` | same |
 | Label index | row `id` in `models/tfhub/<name>/labelmap.csv`; `background` is the last index | line number in `models/students/<taxon>/labels.txt` (or `models/keras/<out>_labels.txt` for your own); no background class |
 | Ops | Conv2D, DepthwiseConv2D, Add, AveragePool, FullyConnected, Softmax, Quantize/Dequantize at the edges. Nothing custom, no dynamic shapes | same |

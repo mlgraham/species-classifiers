@@ -1,0 +1,16 @@
+{
+  "ownerSlug": "mgraham0",
+  "modelSlug": "species-classifiers",
+  "instanceSlug": "fungi",
+  "framework": "tfLite",
+  "overview": "341-species fungus classifier, MobileNetV2 1.0/160 int8, 74.0% top-1 / 93.5% top-5. Not for edibility decisions.",
+  "usage": "# Not for edibility decisions\n\nThis model names a fungus species from a photo with the accuracy below, which means a wrong top-1 answer about one time in four. Never eat a mushroom on the strength of a classifier's output.\n\n# Model Format\n\n`fungi_int8.tflite`: full-integer TFLite, uint8 in and out, runs as is on TensorFlow Lite Micro and LiteRT. `fungi_int8_edgetpu.tflite`: compiled with Edge TPU compiler 16.0, every op mapped. `fungi_float32.tflite`: float in and out. `labels.txt`: one class per line, \"Latin name (Common name)\", line number = class index. `classes.json`: full taxonomy per class.\n\n# Training Data\n\niNaturalist 2021 competition train split, 90,048 images of 341 fungus species (including 55 lichens). Initialised from timm's ImageNet mobilenetv2_100.ra_in1k. 12 epochs, random resized crops, flips, colour jitter.\n\n# Model Inputs\n\n[1, 160, 160, 3] uint8 RGB, 0 to 255, no normalization (the model rescales internally). Centre-crop to a square; an 87.5% centre crop (short side to 183, crop 160) matches validation.\n\n# Model Outputs\n\n[1, 341] uint8 probabilities, scale 1/256 and zero point 0 (prob = value / 256). No background class.\n\n# Model Usage\n\nMeasured on the int8 file over the 3,410 iNat2021 val images for these species: 74.0% top-1 / 93.5% top-5. Any tf.lite.Interpreter works; the GitHub README has a runnable snippet and scripts (classify.py, webcam.py, eval_tflite.py). Full hardware notes: https://github.com/mlgraham/species-classifiers#deployment-contract\n\n# Fine-tuning\n\nRe-train with scripts/distill.py in the GitHub repository; the recipe and what was measured not to help are documented there.\n\n# Changelog\n\nv1: matches GitHub release v0.1.0 (sha256 in SHA256SUMS.txt there) and Hugging Face mlgraham/species-classifier-fungi.\n",
+  "licenseName": "Apache 2.0",
+  "fineTunable": true,
+  "trainingData": [
+    "iNaturalist 2021 competition dataset"
+  ],
+  "modelInstanceType": "ExternalVariant",
+  "baseModelInstanceId": 0,
+  "externalBaseModelUrl": "https://huggingface.co/timm/mobilenetv2_100.ra_in1k"
+}

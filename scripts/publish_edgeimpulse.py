@@ -23,6 +23,7 @@ DESCRIPTIONS = {
     "mammals": "246-species mammal classifier, MobileNetV2 1.0 at 160 px, int8. 54.9% top-1 / 80.5% top-5 on iNat2021 val (44.9% in grayscale). Source and recipe: github.com/mlgraham/species-classifiers",
     "arachnids": "153-species arachnid classifier (spiders, scorpions, ticks), MobileNetV2 1.0 at 160 px, int8. 62.3% top-1 / 86.4% top-5 on iNat2021 val. Source and recipe: github.com/mlgraham/species-classifiers",
     "herps": "483-species reptile and amphibian classifier, MobileNetV2 1.0 at 160 px, int8. 46.0% top-1 / 74.4% top-5 on iNat2021 val (34.4% in grayscale). Source and recipe: github.com/mlgraham/species-classifiers",
+    "fungi": "341-species fungus classifier, MobileNetV2 1.0 at 160 px, int8. 74.0% top-1 / 93.5% top-5 on iNat2021 val. NOT for edibility decisions. Source and recipe: github.com/mlgraham/species-classifiers",
 }
 
 
