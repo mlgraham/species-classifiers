@@ -3,6 +3,7 @@
 
     python scripts/inat_subset.py Mammals
     python scripts/inat_subset.py Arachnids --root data/datasets/inat2021
+    python scripts/inat_subset.py Reptiles Amphibians --train-split train --out data/manifests/herps
 
 Reads train_mini.json and val.json from the dataset root and writes, under
 data/manifests/<slug>/:
@@ -36,19 +37,20 @@ def load(root, split):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("supercategory", choices=SUPERCATEGORIES)
+    ap.add_argument("supercategory", nargs="+", choices=SUPERCATEGORIES, help="one or more; several are merged into one label space")
     ap.add_argument("--root", default=os.path.join(ROOT, "data", "datasets", "inat2021"))
     ap.add_argument("--out", help="manifest dir (default data/manifests/<slug>)")
     ap.add_argument("--train-split", default="train_mini", choices=["train_mini", "train"],
                     help="which annotation file feeds train.tsv: train_mini (50 per species) or the full train")
     args = ap.parse_args()
 
-    slug = args.supercategory.lower().replace(" ", "_").replace("-", "_")
+    wanted = set(args.supercategory)
+    slug = "_".join(c.lower().replace(" ", "_").replace("-", "_") for c in args.supercategory)
     out = args.out or os.path.join(ROOT, "data", "manifests", slug)
     os.makedirs(out, exist_ok=True)
 
     val = load(args.root, "val")
-    cats = sorted((c for c in val["categories"] if c["supercategory"] == args.supercategory), key=lambda c: c["id"])
+    cats = sorted((c for c in val["categories"] if c["supercategory"] in wanted), key=lambda c: c["id"])
     index = {c["id"]: i for i, c in enumerate(cats)}
     with open(os.path.join(out, "labels.txt"), "w", encoding="utf-8") as f:
         for c in cats:
@@ -71,7 +73,7 @@ def main():
                 f.write(f"{image_id}\t{path}\t{label}\n")
         counts[split] = len(rows)
 
-    print(f"{args.supercategory}: {len(cats)} classes, train {counts['train']} images ({args.train_split}), val {counts['val']} images -> {out}")
+    print(f"{' + '.join(args.supercategory)}: {len(cats)} classes, train {counts['train']} images ({args.train_split}), val {counts['val']} images -> {out}")
 
 
 if __name__ == "__main__":

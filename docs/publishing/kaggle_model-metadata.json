@@ -1,0 +1,10 @@
+{
+  "ownerSlug": "mgraham0",
+  "title": "Species classifiers: mammals and arachnids",
+  "slug": "species-classifiers",
+  "subtitle": "int8 MobileNetV2 species classifiers for TFLite Micro and the Coral Edge TPU, companions to Google's AIY models",
+  "isPrivate": false,
+  "description": "# Model Summary\n\nSpecies classifiers small enough for microcontrollers and the Coral Edge TPU, companions to Google's AIY Vision Kit iNaturalist models (google/aiy on Kaggle). MobileNetV2 1.0 at 160 px, full-integer int8, one deployment contract. Two variations: mammals (246 species) and arachnids (153 species). Source, scripts and the GitHub release with checksums: https://github.com/mlgraham/species-classifiers\n\n# Model Characteristics\n\nStock tf.keras MobileNetV2, no custom ops. Each variation ships int8 (uint8 in/out), the same model compiled with Edge TPU compiler 16.0 (every op mapped), float32, labels.txt and classes.json.\n\n# Data Overview\n\nTrained on the iNaturalist 2021 competition dataset's train split (mammals 68,917 images, arachnids 40,687), validated on its val split (10 images per species).\n\n# Evaluation Results\n\nint8 file, 87.5% centre crop: mammals 54.9% top-1 / 80.5% top-5 (grayscale 44.9% / 73.2%); arachnids 62.3% / 86.4%. Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.\n",
+  "publishTime": "",
+  "provenanceSources": "https://github.com/mlgraham/species-classifiers"
+}
