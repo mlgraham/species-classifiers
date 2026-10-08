@@ -106,7 +106,16 @@ and
 [species-classifier-arachnids](https://huggingface.co/mlgraham/species-classifier-arachnids),
 and on Kaggle Models beside Google's originals as
 [mgraham0/species-classifiers](https://www.kaggle.com/models/mgraham0/species-classifiers)
-(TfLite variations `mammals` and `arachnids`).
+(TfLite variations `mammals` and `arachnids`). For board users without a
+toolchain, both are public Edge Impulse projects that deploy straight to
+supported hardware:
+[mammals](https://studio.edgeimpulse.com/public/1132640/latest) and
+[arachnids](https://studio.edgeimpulse.com/public/1132643/latest). For the
+Seeed Grove Vision AI V2, `<taxon>_int8_vela.tflite` in the release is the
+Ethos-U55 build compiled with Seeed's Himax configuration; upload it with
+SenseCraft AI's Model Assistant (the "Upload Model" step there needs the
+board connected over USB, which is why it isn't listed in SenseCraft's
+library yet).
 
 **Recipe.** MobileNetV2 at full width and 160 px, initialised from timm's
 ImageNet weights, trained with hard labels for 12 epochs on the full
@@ -180,6 +189,7 @@ be trained with `--width 050` from the same manifests.
 | `scripts/keras_to_torch.py` | Stock Keras backbone → PyTorch init (measured worse than ImageNet, kept for experiments) |
 | `scripts/teacher_labels.py` | Cache BioCLIP 2 soft labels for a manifest (measured not to help, kept for experiments) |
 | `scripts/eval_stock_on_inat2021.py` | Score a stock model on the iNat2021 species it shares |
+| `scripts/publish_edgeimpulse.py` | Create a public Edge Impulse BYOM project from an int8 file and labels |
 | `scripts/tflite_runner.py`, `scripts/labels.py` | Shared helpers |
 
 ## Project ideas for the i9-9980HK
@@ -282,8 +292,11 @@ validated and is worth about a point over using the whole frame.
   (`edgetpu_compiler`, below), Raspberry Pi AI Camera (Sony IMX500
   converter, 8 MB on-sensor limit shared by weights and activations) and
   Arm Ethos-U55 boards such as the Seeed Grove Vision AI V2 (Arm's Vela
-  compiler). All three take int8 TFLite in. Most run on x86 Linux only, so
-  use Docker on a Mac.
+  compiler, `pip install ethos-u-vela`, with Seeed's `vela_config.ini`:
+  `vela model_int8.tflite --accelerator-config ethos-u55-64 --config
+  vela_config.ini --system-config My_Sys_Cfg --memory-mode
+  My_Mem_Mode_Parent`). All three take int8 TFLite in. The Edge TPU compiler
+  runs on x86 Linux only, so use Docker on a Mac; Vela runs anywhere.
 - **Tier 3, a different export.** Luxonis OAK (RVC2 wants FP16 through
   ONNX) and Hailo (its own dataflow compiler). Not covered here.
 
