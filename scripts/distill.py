@@ -11,7 +11,9 @@ through scripts/export_tflite.py with the deployment contract unchanged.
 Inputs are scaled to -1..1 exactly as the Keras Rescaling layer does.
 
 Loss: cross-entropy on the iNat label, plus, with --teacher, KL to the
-cached BioCLIP 2 logits at temperature T weighted by --alpha.
+cached BioCLIP 2 logits at temperature T weighted by --alpha. --mixup and
+--cutmix (timm's Mixup, alphas) blend pairs of images and their one-hot
+labels within a batch; they do not combine with --teacher.
 
 Saves models/torch/<out>.pt (best val top-1) with labels and config inside,
 and prints color and grayscale val top-1 each epoch so the D2 threshold
@@ -100,6 +102,9 @@ def main():
     ap.add_argument("--wd", type=float, default=1e-4)
     ap.add_argument("--grayscale-p", type=float, default=0.0, help="random grayscale augmentation probability")
     ap.add_argument("--teacher", action="store_true", help="use <manifest>/teacher_train.npz soft labels")
+    ap.add_argument("--mixup", type=float, default=0.0, help="mixup alpha (timm Mixup); 0 disables")
+    ap.add_argument("--cutmix", type=float, default=0.0, help="cutmix alpha; with --mixup too, each batch picks one at even odds")
+    ap.add_argument("--mix-prob", type=float, default=1.0, help="probability a batch is mixed at all when --mixup/--cutmix")
     ap.add_argument("--alpha", type=float, default=0.7, help="weight of the KD term when --teacher")
     ap.add_argument("--temperature", type=float, default=4.0)
     ap.add_argument("--workers", type=int, default=6)
@@ -165,14 +170,29 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{args.out}.pt")
     best = -1.0
+    mixer = None
+    if args.mixup or args.cutmix:
+        if teacher:
+            sys.exit("--mixup/--cutmix do not combine with --teacher: the cached logits are per image")
+        from timm.data import Mixup
+        from timm.loss import SoftTargetCrossEntropy
+        mixer = Mixup(mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, prob=args.mix_prob, switch_prob=0.5,
+                      label_smoothing=0.1, num_classes=len(labels))
+        soft_ce = SoftTargetCrossEntropy()
+        print(f"mixup {args.mixup} / cutmix {args.cutmix} on {args.mix_prob:.0%} of batches")
     print(f"{len(labels)} classes, {len(train_rows)} train, {len(val_rows)} val, teacher={'yes' if teacher else 'no'}, device={args.device}")
     for epoch in range(1, args.epochs + 1):
         model.train()
         t0, seen, loss_sum = time.time(), 0, 0.0
         for x, y, t in train_loader:
             x, y = x.to(args.device), y.to(args.device)
-            logits = model(x)
-            loss = F.cross_entropy(logits, y, label_smoothing=0.0 if teacher else 0.1)
+            if mixer:
+                x, y_soft = mixer(x, y)
+                logits = model(x)
+                loss = soft_ce(logits, y_soft)
+            else:
+                logits = model(x)
+                loss = F.cross_entropy(logits, y, label_smoothing=0.0 if teacher else 0.1)
             if teacher:
                 Tt = args.temperature
                 kd = F.kl_div(F.log_softmax(logits / Tt, 1), F.softmax(t.to(args.device) / Tt, 1), reduction="batchmean") * Tt * Tt
