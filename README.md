@@ -98,7 +98,12 @@ same files, scripts and deployment contract apply.
 Measured with `scripts/eval_tflite.py` on the int8 file at the 87.5% centre
 crop. The files are in `models/students/<taxon>/` with `labels.txt` (one
 "Latin name (Common name)" per line, index = class id) and `classes.json`
-(the full taxonomy per class, for roll-ups).
+(the full taxonomy per class, for roll-ups). They are also on Hugging Face
+with model cards, hash-identical to the
+[v0.1.0 release](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0):
+[species-classifier-mammals](https://huggingface.co/mlgraham/species-classifier-mammals)
+and
+[species-classifier-arachnids](https://huggingface.co/mlgraham/species-classifier-arachnids).
 
 **Recipe.** MobileNetV2 at full width and 160 px, initialised from timm's
 ImageNet weights, trained with hard labels for 12 epochs on the full
