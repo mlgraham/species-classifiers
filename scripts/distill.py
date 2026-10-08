@@ -93,6 +93,7 @@ def main():
     ap.add_argument("--size", type=int, default=160)
     ap.add_argument("--width", default="050", help="timm mobilenetv2 width suffix: 035, 050, 075, 100")
     ap.add_argument("--init", help="backbone init from scripts/keras_to_torch.py (models/torch/init_<name>.pt) instead of ImageNet")
+    ap.add_argument("--resume", help="warm restart: load every weight, classifier included, from a models/torch/<out>.pt saved by this script; the schedule (warmup + cosine at --lr) starts over")
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch", type=int, default=128)
     ap.add_argument("--lr", type=float, default=1e-3)
@@ -141,6 +142,17 @@ def main():
         missing, unexpected = model.load_state_dict(init["backbone"], strict=False)
         assert not unexpected and all(k.startswith("classifier") for k in missing), (missing, unexpected)
         print(f"backbone initialised from {args.init} ({init['source']}); classifier fresh")
+    if args.resume:
+        ck = torch.load(args.resume, map_location="cpu", weights_only=False)
+        if ck["labels"] != labels:
+            sys.exit(f"--resume labels differ from {args.manifest}")
+        if ck["config"]["width"] != args.width:
+            sys.exit(f"--resume is width {ck['config']['width']}, model is {args.width}")
+        for module in model.modules():
+            if isinstance(module, torch.nn.BatchNorm2d):
+                module.eps = ck["bn_eps"]
+        model.load_state_dict(ck["state_dict"], strict=True)
+        print(f"resumed every weight from {args.resume} (epoch {ck['epoch']}, val top-1 {ck['val_top1']:.4f}); fresh schedule at lr {args.lr}")
     model = model.to(args.device)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wd)
     steps = args.epochs * len(train_loader)
