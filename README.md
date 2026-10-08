@@ -103,7 +103,10 @@ with model cards, hash-identical to the
 [v0.1.0 release](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0):
 [species-classifier-mammals](https://huggingface.co/mlgraham/species-classifier-mammals)
 and
-[species-classifier-arachnids](https://huggingface.co/mlgraham/species-classifier-arachnids).
+[species-classifier-arachnids](https://huggingface.co/mlgraham/species-classifier-arachnids),
+and on Kaggle Models beside Google's originals as
+[mgraham0/species-classifiers](https://www.kaggle.com/models/mgraham0/species-classifiers)
+(TfLite variations `mammals` and `arachnids`).
 
 **Recipe.** MobileNetV2 at full width and 160 px, initialised from timm's
 ImageNet weights, trained with hard labels for 12 epochs on the full
