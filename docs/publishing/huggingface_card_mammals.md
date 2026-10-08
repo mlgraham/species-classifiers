@@ -33,11 +33,11 @@ A 246-species mammal classifier small enough for microcontrollers and the Coral 
 
 ## Accuracy
 
-Measured on the int8 file over the 2,460 iNaturalist 2021 validation images for these species (10 per species), with an 87.5% centre crop:
+Measured on the int8 file over the 2,460 iNaturalist 2021 validation images for these species (10 per species), with an 87.5% center crop:
 
 | Input | Top-1 | Top-5 |
 |---|---|---|
-| Colour | 54.9% | 80.5% |
+| Color | 54.9% | 80.5% |
 | Grayscale | 44.9% | 73.2% |
 
 The PyTorch checkpoint scores 56.1% top-1; int8 costs about a point. Grayscale is reported because the model was trained with 20% random grayscale so it holds up on monochrome cameras such as the Coral Dev Board Micro's. For comparison, Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.
@@ -46,7 +46,7 @@ The PyTorch checkpoint scores 56.1% top-1; int8 costs about a point. Grayscale i
 
 - Input `[1, 160, 160, 3]` uint8 RGB, 0 to 255, no normalization; the model rescales internally.
 - Output `[1, 246]` uint8 probabilities, scale 1/256 and zero point 0, so `prob = value / 256`. No background class.
-- Centre-crop to a square. The model was validated with an 87.5% centre crop (resize the short side to 183, crop 160), which is worth about a point over the whole frame.
+- Center-crop to a square. The model was validated with an 87.5% center crop (resize the short side to 183, crop 160), which is worth about a point over the whole frame.
 - Ops are plain Conv2D, DepthwiseConv2D, Add, AveragePool, FullyConnected and Softmax, so the file converts for the Raspberry Pi AI Camera (IMX500) and Arm Ethos-U boards as well as the Edge TPU.
 
 ```python
@@ -69,11 +69,11 @@ for i in np.argsort(-probs)[:3]:
 
 ## How it was trained
 
-MobileNetV2 1.0 at 160 px initialised from timm's `mobilenetv2_100.ra_in1k` ImageNet weights, hard labels, 12 epochs over the full iNat2021 training split (68,917 mammal images), random resized crops, flips, colour jitter and 20% random grayscale, AdamW with cosine decay. Trained in PyTorch on a laptop GPU through MPS, transplanted into Keras with a positional weight copy that verifies to a millionth, then exported with TensorFlow's full-integer converter calibrated on 300 training images. Every script is in the [GitHub repository](https://github.com/mlgraham/species-classifiers); the README's "The students" section lists what was tried and measured not to help (half width, BioCLIP distillation, iNaturalist-backbone init).
+MobileNetV2 1.0 at 160 px initialized from timm's `mobilenetv2_100.ra_in1k` ImageNet weights, hard labels, 12 epochs over the full iNat2021 training split (68,917 mammal images), random resized crops, flips, color jitter and 20% random grayscale, AdamW with cosine decay. Trained in PyTorch on a laptop GPU through MPS, transplanted into Keras with a positional weight copy that verifies to a millionth, then exported with TensorFlow's full-integer converter calibrated on 300 training images. Every script is in the [GitHub repository](https://github.com/mlgraham/species-classifiers); the README's "The students" section lists what was tried and measured not to help (half width, BioCLIP distillation, iNaturalist-backbone init).
 
 ## Provenance and license
 
-Weights Apache-2.0, trained in the species-classifiers repository. Initialised from timm's ImageNet weights (Apache-2.0). Training images from the iNaturalist 2021 competition dataset; species names and taxonomy in `labels.txt` and `classes.json` come from it. The same files, with checksums, are in [GitHub release v0.1.0](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0).
+Weights Apache-2.0, trained in the species-classifiers repository. Initialized from timm's ImageNet weights (Apache-2.0). Training images from the iNaturalist 2021 competition dataset; species names and taxonomy in `labels.txt` and `classes.json` come from it. The same files, with checksums, are in [GitHub release v0.1.0](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0).
 
 Also a public Edge Impulse project that deploys straight to supported boards: https://studio.edgeimpulse.com/public/1132640/latest. And on Kaggle Models beside Google's originals: https://www.kaggle.com/models/mgraham0/species-classifiers
 

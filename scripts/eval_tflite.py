@@ -4,7 +4,7 @@
     python scripts/eval_tflite.py models/tflite/mammals_full_w100_int8.tflite data/manifests/mammals_full
     python scripts/eval_tflite.py models/tflite/mammals_full_w100_int8.tflite data/manifests/mammals_full --grayscale
 
-Feeds uint8 RGB (or float32 for the float export), centre-cropped and
+Feeds uint8 RGB (or float32 for the float export), center-cropped and
 resized to the model's input size, exactly as classify.py does. Prints top-1
 and top-5. This is the number to quote for the shipped file; the PyTorch
 checkpoint's number is the recipe's.
@@ -23,7 +23,7 @@ from teacher_labels import read_manifest  # noqa: E402
 
 
 def load_image(path, size, grayscale, crop_frac=0.875):
-    """Resize the short side to size/crop_frac then centre-crop size x size: the same 87.5% centre crop the
+    """Resize the short side to size/crop_frac then center-crop size x size: the same 87.5% center crop the
     training script validates with (Resize(1.14 * size) + CenterCrop(size)). --crop-frac 1.0 keeps the
     whole image, which is what classify.py and webcam.py do."""
     img = Image.open(path).convert("RGB")
@@ -46,7 +46,7 @@ def main():
     ap.add_argument("--split", default="val")
     ap.add_argument("--grayscale", action="store_true")
     ap.add_argument("--limit", type=int)
-    ap.add_argument("--crop-frac", type=float, default=0.875, help="centre-crop fraction; 1.0 = whole image squared")
+    ap.add_argument("--crop-frac", type=float, default=0.875, help="center-crop fraction; 1.0 = whole image squared")
     args = ap.parse_args()
 
     import tensorflow as tf
@@ -72,7 +72,7 @@ def main():
         top5 += int(label in order[:5])
     n = len(rows)
     ms = (time.time() - t0) * 1000 / n
-    mode = ("grayscale" if args.grayscale else "colour") + f", crop {args.crop_frac}"
+    mode = ("grayscale" if args.grayscale else "color") + f", crop {args.crop_frac}"
     print(f"{os.path.basename(args.model)} on {args.manifest} {args.split} ({mode}, {n} images): "
           f"top-1 {top1 / n:.4f}  top-5 {top5 / n:.4f}  {ms:.1f} ms/image on CPU")
 

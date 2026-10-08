@@ -8,7 +8,7 @@
 #   1. distill.py        full width, 160 px, ImageNet init, hard labels, 12 epochs
 #   2. torch_to_keras.py transplant, verified
 #   3. export_tflite.py  float32 + int8, calibrated on 300 images spread over the taxon's train set
-#   4. eval_tflite.py    int8 top-1/top-5 on val (colour, and grayscale if --grayscale-p was given)
+#   4. eval_tflite.py    int8 top-1/top-5 on val (color, and grayscale if --grayscale-p was given)
 #   5. edgetpu_compile.sh and vela (Seeed Himax config) on the int8 file
 # Publishing (release, Hugging Face, Kaggle, Edge Impulse) is deliberate and separate.
 set -euo pipefail

@@ -88,7 +88,7 @@ def main():
     backbone = tf.keras.applications.MobileNetV2(input_shape=(size, size, 3), alpha=alpha, include_top=False, weights=None)
     for layer in backbone.layers:
         if isinstance(layer, tf.keras.layers.BatchNormalization):
-            layer.epsilon = ck.get("bn_eps", 1e-5)  # timm default 1e-5; iNat-initialised students keep Keras's 1e-3
+            layer.epsilon = ck.get("bn_eps", 1e-5)  # timm default 1e-5; iNat-initialized students keep Keras's 1e-3
     inputs = tf.keras.Input(shape=(size, size, 3), name="image")
     x = tf.keras.layers.Rescaling(1.0 / 127.5, offset=-1.0, name="rescale")(inputs)
     x = backbone(x, training=False)

@@ -15,7 +15,7 @@ Seven species classifiers as ready-to-run TFLite files: Google's three AIY Visio
 | Input | `[1, 224, 224, 3]` uint8 RGB, 0 to 255, no normalization | `[1, 160, 160, 3]`, same |
 | Output | uint8 probabilities, scale 1/256; last class is `background` | uint8 probabilities, scale 1/256; no background class |
 
-Centre-crop to a square first. The students were validated with an 87.5% centre crop (resize the short side to 183, crop 160), which is worth about a point over the whole frame. The README's "Deployment contract" section has the rest.
+Center-crop to a square first. The students were validated with an 87.5% center crop (resize the short side to 183, crop 160), which is worth about a point over the whole frame. The README's "Deployment contract" section has the rest.
 
 ## Accuracy, measured the same way for all seven
 

@@ -95,14 +95,14 @@ time in four. Never eat a mushroom on the strength of a classifier's output.
 | Species | 246 | 153 | 483 | 341 |
 | Training images (iNat2021 train) | 68,917 | 40,687 | 133,082 | 90,048 |
 | Validation images (iNat2021 val, 10 per species) | 2,460 | 1,530 | 4,830 | 3,410 |
-| int8 top-1, colour | 54.9% | 62.3% | 46.0% | 74.0% |
-| int8 top-5, colour | 80.5% | 86.4% | 74.4% | 93.5% |
+| int8 top-1, color | 54.9% | 62.3% | 46.0% | 74.0% |
+| int8 top-5, color | 80.5% | 86.4% | 74.4% | 93.5% |
 | int8 top-1, grayscale input | 44.9% | not measured | 34.4% | not measured |
 | PyTorch checkpoint top-1 | 56.1% | 64.4% | 46.6% | 74.5% |
 | Edge TPU | all ops mapped, 3.0 MiB on-chip | all ops mapped, 2.9 MiB on-chip | all ops mapped, 3.4 MiB on-chip | all ops mapped, 3.2 MiB on-chip |
 | CPU latency, this laptop | 14 ms | 9 ms | 9 ms | 9 ms |
 
-Measured with `scripts/eval_tflite.py` on the int8 file at the 87.5% centre
+Measured with `scripts/eval_tflite.py` on the int8 file at the 87.5% center
 crop. The files are in `models/students/<taxon>/` with `labels.txt` (one
 "Latin name (Common name)" per line, index = class id) and `classes.json`
 (the full taxonomy per class, for roll-ups). They are also on Hugging Face
@@ -128,9 +128,9 @@ SenseCraft AI's Model Assistant (the "Upload Model" step there needs the
 board connected over USB, which is why it isn't listed in SenseCraft's
 library yet).
 
-**Recipe.** MobileNetV2 at full width and 160 px, initialised from timm's
+**Recipe.** MobileNetV2 at full width and 160 px, initialized from timm's
 ImageNet weights, trained with hard labels for 12 epochs on the full
-iNat2021 training split with random crops, flips, colour jitter and (for
+iNat2021 training split with random crops, flips, color jitter and (for
 mammals and herps) 20% random grayscale so the model holds up on a monochrome camera.
 Trained in PyTorch on the laptop's Radeon through MPS, moved into Keras with
 a positional weight transplant that verifies to a millionth, then exported
@@ -162,13 +162,13 @@ they have fewer classes to choose from. Herps does not: reptiles and
 amphibians share one 483-class head and it scores 46% against the 55% bar
 set for it before training, so treat it as a first cut. Fungi scores the
 highest of the set; many of its 341 species have a distinctive shape and
-colour, and 10 validation images per species is a small test. Measure your own with
+color, and 10 validation images per species is a small test. Measure your own with
 `scripts/eval_stock_on_inat2021.py` and `scripts/eval_tflite.py`.
 
 **What didn't work, measured on the 50-image-per-species mini split.**
 Half width (0.5) topped out at 33.8% on mammals against 40.0% for full width.
 Distilling from BioCLIP 2 soft labels cost two points rather than gaining
-any. Initialising from the stock insect backbone rather than ImageNet cost six.
+any. Initializing from the stock insect backbone rather than ImageNet cost six.
 The gains all came from data: moving from 50 to 280 images per species took
 the same recipe from 40% to 56%. The scripts for every one of those
 experiments are in `scripts/`, so re-running them on another taxon is one
@@ -272,7 +272,7 @@ python scripts/webcam.py --model models/keras/backyard.keras --labels models/ker
 ```
 
 Hold a phone showing an insect photo in front of the camera. The script
-centre-crops the frame, overlays the top three predictions and prints the
+center-crops the frame, overlays the top three predictions and prints the
 inference time. Press `s` to save a crop into `data/captures/`, which is a
 quick way to collect a `not_an_insect` class or real-world test images.
 
@@ -293,8 +293,8 @@ board we don't cover, these are the facts you need.
 | Ops | Conv2D, DepthwiseConv2D, Add, AveragePool, FullyConnected, Softmax, Quantize/Dequantize at the edges. Nothing custom, no dynamic shapes | same |
 | Float variant | `<stem>_float32.tflite`, float32 in and out, same layout | same |
 
-Centre-crop to a square before resizing; the scripts do this and accuracy
-drops if the subject is squashed. For the distilled students an 87.5% centre
+Center-crop to a square before resizing; the scripts do this and accuracy
+drops if the subject is squashed. For the distilled students an 87.5% center
 crop (resize the short side to 183 px, crop 160) matches how they were
 validated and is worth about a point over using the whole frame.
 

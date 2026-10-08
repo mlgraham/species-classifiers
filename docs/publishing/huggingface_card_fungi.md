@@ -37,19 +37,19 @@ A 341-species fungus classifier (mushrooms, brackets, puffballs, cup fungi and 5
 
 ## Accuracy
 
-Measured on the int8 file over the 3,410 iNaturalist 2021 validation images for these species (10 per species), with an 87.5% centre crop:
+Measured on the int8 file over the 3,410 iNaturalist 2021 validation images for these species (10 per species), with an 87.5% center crop:
 
 | Input | Top-1 | Top-5 |
 |---|---|---|
-| Colour | 74.0% | 93.5% |
+| Color | 74.0% | 93.5% |
 
-The PyTorch checkpoint scores 74.5% top-1. This is the strongest model in the collection; many of these species have a distinctive shape and colour, and 10 validation images per species is a small test, so expect lower numbers on your own photos. For comparison, Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.
+The PyTorch checkpoint scores 74.5% top-1. This is the strongest model in the collection; many of these species have a distinctive shape and color, and 10 validation images per species is a small test, so expect lower numbers on your own photos. For comparison, Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.
 
 ## Input contract
 
 - Input `[1, 160, 160, 3]` uint8 RGB, 0 to 255, no normalization; the model rescales internally.
 - Output `[1, 341]` uint8 probabilities, scale 1/256 and zero point 0, so `prob = value / 256`. No background class.
-- Centre-crop to a square. The model was validated with an 87.5% centre crop (resize the short side to 183, crop 160), which is worth about a point over the whole frame.
+- Center-crop to a square. The model was validated with an 87.5% center crop (resize the short side to 183, crop 160), which is worth about a point over the whole frame.
 - Ops are plain Conv2D, DepthwiseConv2D, Add, AveragePool, FullyConnected and Softmax, so the file converts for the Raspberry Pi AI Camera (IMX500) and Arm Ethos-U boards as well as the Edge TPU.
 
 ```python
@@ -72,11 +72,11 @@ for i in np.argsort(-probs)[:3]:
 
 ## How it was trained
 
-MobileNetV2 1.0 at 160 px initialised from timm's `mobilenetv2_100.ra_in1k` ImageNet weights, hard labels, 12 epochs over the full iNat2021 training split (90,048 fungus images), random resized crops, flips and colour jitter, AdamW with cosine decay. About four hours in PyTorch on a laptop GPU through MPS, transplanted into Keras with a positional weight copy that verifies to a millionth, then exported with TensorFlow's full-integer converter calibrated on 300 training images. Every script is in the [GitHub repository](https://github.com/mlgraham/species-classifiers); the README's "The students" section lists what was tried and measured not to help.
+MobileNetV2 1.0 at 160 px initialized from timm's `mobilenetv2_100.ra_in1k` ImageNet weights, hard labels, 12 epochs over the full iNat2021 training split (90,048 fungus images), random resized crops, flips and color jitter, AdamW with cosine decay. About four hours in PyTorch on a laptop GPU through MPS, transplanted into Keras with a positional weight copy that verifies to a millionth, then exported with TensorFlow's full-integer converter calibrated on 300 training images. Every script is in the [GitHub repository](https://github.com/mlgraham/species-classifiers); the README's "The students" section lists what was tried and measured not to help.
 
 ## Provenance and license
 
-Weights Apache-2.0, trained in the species-classifiers repository. Initialised from timm's ImageNet weights (Apache-2.0). Training images from the iNaturalist 2021 competition dataset; species names and taxonomy in `labels.txt` and `classes.json` come from it. The same files, with checksums, are in [GitHub release v0.1.0](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0).
+Weights Apache-2.0, trained in the species-classifiers repository. Initialized from timm's ImageNet weights (Apache-2.0). Training images from the iNaturalist 2021 competition dataset; species names and taxonomy in `labels.txt` and `classes.json` come from it. The same files, with checksums, are in [GitHub release v0.1.0](https://github.com/mlgraham/species-classifiers/releases/tag/v0.1.0).
 
 Also a public Edge Impulse project that deploys straight to supported boards: https://studio.edgeimpulse.com/public/1133231/latest. And on Kaggle Models beside Google's originals: https://www.kaggle.com/models/mgraham0/species-classifiers
 

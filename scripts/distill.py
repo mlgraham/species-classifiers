@@ -14,7 +14,7 @@ Loss: cross-entropy on the iNat label, plus, with --teacher, KL to the
 cached BioCLIP 2 logits at temperature T weighted by --alpha.
 
 Saves models/torch/<out>.pt (best val top-1) with labels and config inside,
-and prints colour and grayscale val top-1 each epoch so the D2 threshold
+and prints color and grayscale val top-1 each epoch so the D2 threshold
 can be read straight off the log.
 """
 import argparse
@@ -141,7 +141,7 @@ def main():
                 module.eps = init["bn_eps"]
         missing, unexpected = model.load_state_dict(init["backbone"], strict=False)
         assert not unexpected and all(k.startswith("classifier") for k in missing), (missing, unexpected)
-        print(f"backbone initialised from {args.init} ({init['source']}); classifier fresh")
+        print(f"backbone initialized from {args.init} ({init['source']}); classifier fresh")
     if args.resume:
         ck = torch.load(args.resume, map_location="cpu", weights_only=False)
         if ck["labels"] != labels:

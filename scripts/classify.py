@@ -22,7 +22,7 @@ from tflite_runner import load_any  # noqa: E402
 
 def load_image(path, size=224):
     img = Image.open(path).convert("RGB")
-    # centre crop to square so the subject is not squashed
+    # center crop to square so the subject is not squashed
     w, h = img.size
     s = min(w, h)
     img = img.crop(((w - s) // 2, (h - s) // 2, (w - s) // 2 + s, (h - s) // 2 + s))
