@@ -21,3 +21,6 @@ models/torch/
 
 # Edge TPU compiler output (regenerate with scripts/edgetpu_compile.sh)
 models/tflite/*_edgetpu.log
+
+# tokens for publishing (never committed)
+.env

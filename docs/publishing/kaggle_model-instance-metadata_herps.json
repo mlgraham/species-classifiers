@@ -1,0 +1,16 @@
+{
+  "ownerSlug": "mgraham0",
+  "modelSlug": "species-classifiers",
+  "instanceSlug": "herps",
+  "framework": "tfLite",
+  "overview": "483-species reptile and amphibian classifier, MobileNetV2 1.0/160 int8, 46.0% top-1 / 74.4% top-5 in colour, 34.4% / 62.7% in grayscale.",
+  "usage": "# Model Format\n\n`herps_int8.tflite`: full-integer TFLite, uint8 in and out, runs as is on TensorFlow Lite Micro and LiteRT. `herps_int8_edgetpu.tflite`: compiled with Edge TPU compiler 16.0, every op mapped. `herps_float32.tflite`: float in and out. `labels.txt`: one class per line, \"Latin name (Common name)\", line number = class index. `classes.json`: full taxonomy per class.\n\n# Training Data\n\niNaturalist 2021 competition train split, 133,082 images of 483 reptile and amphibian species (313 reptiles, 170 amphibians). Initialised from timm's ImageNet mobilenetv2_100.ra_in1k. 12 epochs, random resized crops, flips, colour jitter, 20% random grayscale.\n\n# Model Inputs\n\n[1, 160, 160, 3] uint8 RGB, 0 to 255, no normalization (the model rescales internally). Centre-crop to a square; an 87.5% centre crop (short side to 183, crop 160) matches validation.\n\n# Model Outputs\n\n[1, 483] uint8 probabilities, scale 1/256 and zero point 0 (prob = value / 256). No background class.\n\n# Model Usage\n\nMeasured on the int8 file over the iNat2021 val images for these species: 46.0% top-1 / 74.4% top-5 in colour, 34.4% / 62.7% in grayscale. The weakest model in the collection (reptiles and amphibians share one 483-class head); classes.json lets you roll predictions up to order where it is far more reliable. Any tf.lite.Interpreter works; the GitHub README has a runnable snippet and scripts (classify.py, webcam.py, eval_tflite.py). Full hardware notes: https://github.com/mlgraham/species-classifiers#deployment-contract\n\n# Fine-tuning\n\nRe-train with scripts/distill.py in the GitHub repository; the recipe and what was measured not to help are documented there.\n\n# Changelog\n\nv1: matches GitHub release v0.1.0 (sha256 in SHA256SUMS.txt there) and Hugging Face mlgraham/species-classifier-herps.\n",
+  "licenseName": "Apache 2.0",
+  "fineTunable": true,
+  "trainingData": [
+    "iNaturalist 2021 competition dataset"
+  ],
+  "modelInstanceType": "ExternalVariant",
+  "baseModelInstanceId": 0,
+  "externalBaseModelUrl": "https://huggingface.co/timm/mobilenetv2_100.ra_in1k"
+}

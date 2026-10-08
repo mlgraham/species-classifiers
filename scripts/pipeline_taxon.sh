@@ -48,7 +48,7 @@ fi
 
 say "compile"
 scripts/edgetpu_compile.sh "models/tflite/${NAME}_int8.tflite" 2>&1 | grep -E "compiled|On-chip memory used|CPU" | tee -a "$LOG"
-VELA_CFG="${VELA_CONFIG:-tools/vela_config.ini}"
+VELA_CFG="$(cd "$(dirname "${VELA_CONFIG:-tools/vela_config.ini}")" && pwd)/$(basename "${VELA_CONFIG:-tools/vela_config.ini}")"  # Vela resolves relative paths inside its own package
 if [ -f "$VELA_CFG" ]; then
   vela "models/tflite/${NAME}_int8.tflite" --accelerator-config ethos-u55-64 --config "$VELA_CFG" --system-config My_Sys_Cfg --memory-mode My_Mem_Mode_Parent --output-dir models/tflite 2>&1 | grep -E "macs|Flash bandwidth  per" | tee -a "$LOG"
 fi
