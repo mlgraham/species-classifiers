@@ -117,13 +117,16 @@ data older (2017):
 
 | Model | Classes | Val images | Top-1 | Top-5 |
 |---|---|---|---|---|
-| stock `insects_V1` | 1,022 | 9,510 (951 shared species) | 59.0% | 80.8% |
-| stock `birds_V1` | 965 | 8,600 (860 shared species) | 52.6% | 77.3% |
-| stock `plants_V1` | 2,102 | 19,580 (1,958 shared species) | 44.3% | 76.5% |
+| stock `insects_V1` | 1,022 | 9,510 (951 shared species) | 59.1% | 80.6% |
+| stock `birds_V1` | 965 | 8,600 (860 shared species) | 53.5% | 77.3% |
+| stock `plants_V1` | 2,102 | 19,580 (1,958 shared species) | 53.2% | 76.8% |
 | new `arachnids` | 153 | 1,530 | 62.3% | 86.4% |
 | new `mammals` | 246 | 2,460 | 54.9% | 80.5% |
 
-The students land in the same band as the originals: a few points either
+The stock int8 files are calibrated on 300 iNat2021 validation images of
+their own taxon; calibrating the plant model on a handful of insect photos,
+as an early export did, cost it nine points, so give `export_tflite.py` a
+representative `--rep-dir`. The students land in the same band as the originals: a few points either
 side on top-1, and a little stronger on top-5, with the caveat that they
 have fewer classes to choose from. Measure your own with
 `scripts/eval_stock_on_inat2021.py` and `scripts/eval_tflite.py`.
@@ -365,6 +368,10 @@ images via Wikimedia Commons:
   by N0n-Sum-Qua1is-Eram.
 - `garden_spider.jpg`: [Argiope aurantia, 2022-08-14, Beechview, 01](https://commons.wikimedia.org/wiki/File:Argiope_aurantia,_2022-08-14,_Beechview,_01.jpg)
   by Cbaile19.
+- `dandelion.jpg`: [Taraxacum officinale, 2023-04-14, Beechview, 02](https://commons.wikimedia.org/wiki/File:Taraxacum_officinale,_2023-04-14,_Beechview,_02.jpg)
+  by Cbaile19.
+- `cardinal.jpg`: [Cardinal in mid flight](https://commons.wikimedia.org/wiki/File:Cardinal_in_mid_flight.jpg)
+  by Giigugiigu.
 
 iNaturalist is a joint initiative of the California Academy of Sciences and
 the National Geographic Society. This project is not affiliated with
