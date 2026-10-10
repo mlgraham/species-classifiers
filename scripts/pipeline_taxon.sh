@@ -47,6 +47,15 @@ if [[ " $* " == *" --grayscale-p "* ]]; then
 fi
 
 say "compile"
+if [[ "$(curl -s --unix-socket ~/.docker/run/docker.sock --max-time 3 http://localhost/_ping)" != "OK" ]]; then
+  echo "docker engine not answering, restarting Docker Desktop" | tee -a "$LOG"
+  osascript -e 'quit app "Docker"' 2>/dev/null; n=0
+  while pgrep -x com.docker.backend >/dev/null && [ $n -lt 60 ]; do sleep 2; n=$((n+1)); done
+  pgrep -x com.docker.backend >/dev/null && pkill -9 com.docker.backend && sleep 3
+  open -a Docker; n=0
+  until [ "$(curl -s --unix-socket ~/.docker/run/docker.sock --max-time 3 http://localhost/_ping 2>/dev/null)" = "OK" ] || [ $n -ge 90 ]; do sleep 2; n=$((n+1)); done
+  echo "docker engine $( [ $n -lt 90 ] && echo up || echo still down) after restart" | tee -a "$LOG"
+fi
 scripts/edgetpu_compile.sh "models/tflite/${NAME}_int8.tflite" 2>&1 | grep -E "compiled|On-chip memory used|CPU" | tee -a "$LOG"
 VELA_CFG="$(cd "$(dirname "${VELA_CONFIG:-tools/vela_config.ini}")" && pwd)/$(basename "${VELA_CONFIG:-tools/vela_config.ini}")"  # Vela resolves relative paths inside its own package
 if [ -f "$VELA_CFG" ]; then
