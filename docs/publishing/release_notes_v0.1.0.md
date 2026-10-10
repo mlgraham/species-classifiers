@@ -28,10 +28,10 @@ int8 file, iNaturalist 2021 validation images. The stock models are scored on th
 | plants | 2,102 | 19,580 | 53.2% | 76.8% |
 | arachnids | 153 | 1,530 | 62.3% | 86.4% |
 | mammals | 246 | 2,460 | 54.9% | 80.5% |
-| herps | 483 | 4,830 | 46.0% | 74.4% |
+| herps | 483 | 4,830 | 49.7% | 77.8% |
 | fungi | 341 | 3,410 | 74.0% | 93.5% |
 
-Mammals in grayscale: 44.9% top-1, herps 34.4% (both were trained with random grayscale for monochrome cameras). Herps is the weakest of the set: reptiles and amphibians share one 483-class head and it missed the 55% bar set for it before training.
+Mammals in grayscale: 44.9% top-1, herps 38.1% (both were trained with random grayscale for monochrome cameras). Herps is the weakest of the set: reptiles and amphibians share one 483-class head. The herps assets were refreshed on 2026-10-10 with a retrain on 401,791 images (133,082 iNat2021 + 268,709 CC-licensed iNaturalist open-data photos), lifting int8 top-1 from 46.0% to 49.7%; the 55% bar set for it before training still stands.
 
 ## Provenance
 
