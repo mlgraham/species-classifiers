@@ -335,7 +335,7 @@ and parameters fully cached on-chip.
 The Dev Board Micro runs TensorFlow Lite Micro on a Cortex-M7 with an Edge
 TPU coprocessor, 64 MB RAM and 128 MB flash. The int8 files are 3 to 5.4 MB,
 so every model here fits comfortably. The compiled `_edgetpu.tflite` files
-for the two students are already in `models/students/`.
+for the four students are already in `models/students/`.
 
 1. Export int8 TFLite with representative images from your dataset:
 
@@ -362,7 +362,8 @@ for the two students are already in `models/students/`.
    or `camera` example, replace its label file with
    `models/keras/<out>_labels.txt`, build with the coralmicro CMake toolchain
    and flash. The camera delivers 324x324 monochrome frames, so resize to
-   224 and replicate the channel. See idea 5 above.
+   the model's input size (224 for the stock models, 160 for the students)
+   and replicate the channel. See idea 5 above.
 
 For a Raspberry Pi or any Linux box with a USB Accelerator the same
 `_edgetpu.tflite` runs through
