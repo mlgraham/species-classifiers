@@ -95,10 +95,10 @@ time in four. Never eat a mushroom on the strength of a classifier's output.
 | Species | 246 | 153 | 483 | 341 |
 | Training images (iNat2021 train) | 68,917 | 40,687 | 133,082 | 90,048 |
 | Validation images (iNat2021 val, 10 per species) | 2,460 | 1,530 | 4,830 | 3,410 |
-| int8 top-1, color | 54.9% | 62.3% | 52.9% | 74.0% |
-| int8 top-5, color | 80.5% | 86.4% | 80.4% | 93.5% |
-| int8 top-1, grayscale input | 44.9% | not measured | 40.5% | not measured |
-| PyTorch checkpoint top-1 | 56.1% | 64.4% | 54.5% | 74.5% |
+| int8 top-1, color | 54.9% | 62.3% | 54.3% | 74.0% |
+| int8 top-5, color | 80.5% | 86.4% | 80.5% | 93.5% |
+| int8 top-1, grayscale input | 44.9% | not measured | 42.0% | not measured |
+| PyTorch checkpoint top-1 | 56.1% | 64.4% | 55.3% | 74.5% |
 | Edge TPU | all ops mapped, 3.0 MiB on-chip | all ops mapped, 2.9 MiB on-chip | all ops mapped, 3.4 MiB on-chip | all ops mapped, 3.2 MiB on-chip |
 | CPU latency, this laptop | 14 ms | 9 ms | 10 ms | 9 ms |
 
@@ -107,7 +107,9 @@ crop. Herps was retrained on 2026-10-10 on its 133,082 iNat2021 rows plus
 268,709 CC-licensed iNaturalist open-data photos (401,791 images in all),
 lifting int8 top-1 from 46.0% to 49.7%, then given 12 more epochs on the same
 401,791 images on an NVIDIA A100 (run by M. Gage Plott on a university HPC
-cluster), lifting it to 52.9%; the 55% target stands for a future run. The
+cluster), lifting it to 52.9%, then a further 24 epochs there (best at epoch
+23), lifting it to 54.3%. The PyTorch checkpoint now scores 55.3%, but the
+int8 file is still under the 55% target, which stands for a future run. The
 files are in `models/students/<taxon>/` with `labels.txt` (one
 "Latin name (Common name)" per line, index = class id) and `classes.json`
 (the full taxonomy per class, for roll-ups). They are also on Hugging Face
@@ -141,7 +143,7 @@ Trained in PyTorch on the laptop's Radeon through MPS, moved into Keras with
 a positional weight transplant that verifies to a millionth, then exported
 exactly like the stock models. About 2.5 hours for mammals, 1.5 for
 arachnids, 6 for herps, 4 for fungi. The herps file in the release has had
-two warm restarts on top of that, the second on an A100; the note under the
+three warm restarts on top of that, the last two on an A100; the note under the
 results table above has the details.
 
 **How they compare with Google's models.** Scored the same way, int8 file on
@@ -157,7 +159,7 @@ data older (2017):
 | stock `plants_V1` | 2,102 | 19,580 (1,958 shared species) | 53.2% | 76.8% |
 | new `arachnids` | 153 | 1,530 | 62.3% | 86.4% |
 | new `mammals` | 246 | 2,460 | 54.9% | 80.5% |
-| new `herps` | 483 | 4,830 | 52.9% | 80.4% |
+| new `herps` | 483 | 4,830 | 54.3% | 80.5% |
 | new `fungi` | 341 | 3,410 | 74.0% | 93.5% |
 
 The stock int8 files are calibrated on 300 iNat2021 validation images of
@@ -166,7 +168,7 @@ as an early export did, cost it nine points, so give `export_tflite.py` a
 representative `--rep-dir`. Mammals and arachnids land in the same band as the originals: a few points
 either side on top-1, and a little stronger on top-5, with the caveat that
 they have fewer classes to choose from. Herps does not: reptiles and
-amphibians share one 483-class head and it scores 52.9% against the 55% bar
+amphibians share one 483-class head and it scores 54.3% against the 55% bar
 set for it before training, so treat it as a first cut. Fungi scores the
 highest of the set; many of its 341 species have a distinctive shape and
 color, and 10 validation images per species is a small test. Measure your own with

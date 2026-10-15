@@ -39,10 +39,10 @@ Measured on the int8 file over the 4,830 iNaturalist 2021 validation images for 
 
 | Input | Top-1 | Top-5 |
 |---|---|---|
-| Color | 52.9% | 80.4% |
-| Grayscale | 40.5% | 69.1% |
+| Color | 54.3% | 80.5% |
+| Grayscale | 42.0% | 69.5% |
 
-The PyTorch checkpoint scores 54.5% top-1. This is the weakest of the models in the collection: reptiles and amphibians share one 483-class head, and it remains under the 55% top-1 bar set before training, so treat it as a work in progress. Top-5 is still useful for narrowing a sighting, and `classes.json` lets you roll predictions up to order (Squamata, Anura, Caudata, Testudines) where it is much more reliable. Grayscale is reported because the model was trained with 20% random grayscale so it holds up on monochrome cameras. For comparison, Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.
+The PyTorch checkpoint scores 55.3% top-1. This is the weakest of the models in the collection: reptiles and amphibians share one 483-class head, and the int8 file remains under the 55% top-1 bar set before training, so treat it as a work in progress. Top-5 is still useful for narrowing a sighting, and `classes.json` lets you roll predictions up to order (Squamata, Anura, Caudata, Testudines) where it is much more reliable. Grayscale is reported because the model was trained with 20% random grayscale so it holds up on monochrome cameras. For comparison, Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.
 
 ## Input contract
 
@@ -71,7 +71,7 @@ for i in np.argsort(-probs)[:3]:
 
 ## How it was trained
 
-MobileNetV2 1.0 at 160 px initialized from timm's `mobilenetv2_100.ra_in1k` ImageNet weights, hard labels, 12 epochs over the full iNat2021 training split (133,082 reptile and amphibian images) plus a 6-epoch warm restart on those rows plus 268,709 CC-licensed iNaturalist open-data photos (401,791 images in all), then a 12-epoch warm restart on the same 401,791 images at learning rate 3e-4, random resized crops, flips, color jitter and 20% random grayscale, AdamW with cosine decay. The first two stages ran in PyTorch on a laptop GPU through MPS and the last on an NVIDIA A100 (run by M. Gage Plott on a university HPC cluster); the result was transplanted into Keras with a positional weight copy that verifies to a millionth, then exported with TensorFlow's full-integer converter calibrated on 300 training images. Every script is in the [GitHub repository](https://github.com/mlgraham/species-classifiers); the README's "The students" section lists what was tried and measured not to help.
+MobileNetV2 1.0 at 160 px initialized from timm's `mobilenetv2_100.ra_in1k` ImageNet weights, hard labels, 12 epochs over the full iNat2021 training split (133,082 reptile and amphibian images) plus a 6-epoch warm restart on those rows plus 268,709 CC-licensed iNaturalist open-data photos (401,791 images in all), then a 12-epoch and a 24-epoch warm restart on the same 401,791 images at learning rate 3e-4 (the second keeping its best epoch, 23), random resized crops, flips, color jitter and 20% random grayscale, AdamW with cosine decay. The first two stages ran in PyTorch on a laptop GPU through MPS and the last two on an NVIDIA A100 (run by M. Gage Plott on a university HPC cluster); the result was transplanted into Keras with a positional weight copy that verifies to a millionth, then exported with TensorFlow's full-integer converter calibrated on 300 training images. Every script is in the [GitHub repository](https://github.com/mlgraham/species-classifiers); the README's "The students" section lists what was tried and measured not to help.
 
 ## Provenance and license
 
