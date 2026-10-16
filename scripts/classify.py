@@ -17,16 +17,13 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labels import ROOT, load_finetuned_labels, load_labels  # noqa: E402
+from preprocess import CROP_FRAC, center_crop  # noqa: E402
 from tflite_runner import load_any  # noqa: E402
 
 
-def load_image(path, size=224):
-    img = Image.open(path).convert("RGB")
-    # center crop to square so the subject is not squashed
-    w, h = img.size
-    s = min(w, h)
-    img = img.crop(((w - s) // 2, (h - s) // 2, (w - s) // 2 + s, (h - s) // 2 + s))
-    return np.asarray(img.resize((size, size), Image.BILINEAR), dtype=np.float32)
+def load_image(path, size=224, crop_frac=CROP_FRAC):
+    # square center crop so the subject is not squashed; 87.5% of the short side by default, as the models are scored
+    return np.asarray(center_crop(Image.open(path).convert("RGB"), size, crop_frac), dtype=np.float32)
 
 
 def main():
@@ -36,6 +33,8 @@ def main():
     ap.add_argument("--model", help="a .keras model or a .tflite file (default models/keras/<name>.keras)")
     ap.add_argument("--labels", help="one-label-per-line file from finetune.py (default: stock labelmap)")
     ap.add_argument("--top", type=int, default=5)
+    ap.add_argument("--crop-frac", type=float, default=CROP_FRAC,
+                    help="center-crop fraction (default 0.875, how the models are scored); 1.0 = whole image squared")
     args = ap.parse_args()
 
     model_path = args.model or os.path.join(ROOT, "models", "keras", f"{args.name}.keras")
@@ -43,7 +42,7 @@ def main():
     labels = load_finetuned_labels(args.labels) if args.labels else load_labels(args.name)
     size = model.input_shape[1]
 
-    batch = np.stack([load_image(p, size) for p in args.images])
+    batch = np.stack([load_image(p, size, args.crop_frac) for p in args.images])
     probs = model.predict(batch, verbose=0)
     for path, p in zip(args.images, probs):
         print(path)

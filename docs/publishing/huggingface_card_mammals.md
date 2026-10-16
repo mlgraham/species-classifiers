@@ -40,13 +40,13 @@ Measured on the int8 file over the 2,460 iNaturalist 2021 validation images for 
 | Color | 54.9% | 80.5% |
 | Grayscale | 44.9% | 73.2% |
 
-The PyTorch checkpoint scores 56.1% top-1; int8 costs about a point. Grayscale is reported because the model was trained with 20% random grayscale so it holds up on monochrome cameras such as the Coral Dev Board Micro's. For comparison, Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.
+The PyTorch checkpoint scores 55.7% top-1 under the same crop; int8 costs about a point. Grayscale is reported because the model was trained with 20% random grayscale so it holds up on monochrome cameras such as the Coral Dev Board Micro's. For comparison, Google's stock AIY insect model scores 59.1% top-1 on the iNat2021 species it shares, choosing among 1,022 classes.
 
 ## Input contract
 
 - Input `[1, 160, 160, 3]` uint8 RGB, 0 to 255, no normalization; the model rescales internally.
 - Output `[1, 246]` uint8 probabilities, scale 1/256 and zero point 0, so `prob = value / 256`. No background class.
-- Center-crop to a square. The model was validated with an 87.5% center crop (resize the short side to 183, crop 160), which is worth about a point over the whole frame.
+- Center-crop to a square. The model was validated with an 87.5% center crop (resize the short side to 183, crop 160), which is worth about half a point of top-1 over the whole frame.
 - Ops are plain Conv2D, DepthwiseConv2D, Add, AveragePool, FullyConnected and Softmax, so the file converts for the Raspberry Pi AI Camera (IMX500) and Arm Ethos-U boards as well as the Edge TPU.
 
 ```python

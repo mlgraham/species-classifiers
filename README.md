@@ -98,18 +98,18 @@ time in four. Never eat a mushroom on the strength of a classifier's output.
 | int8 top-1, color | 54.9% | 62.3% | 54.3% | 74.0% |
 | int8 top-5, color | 80.5% | 86.4% | 80.5% | 93.5% |
 | int8 top-1, grayscale input | 44.9% | not measured | 42.0% | not measured |
-| PyTorch checkpoint top-1 | 56.1% | 64.4% | 55.3% | 74.5% |
+| PyTorch checkpoint top-1 | 55.7% | 63.1% | 54.8% | 74.4% |
 | Edge TPU | all ops mapped, 3.0 MiB on-chip | all ops mapped, 2.9 MiB on-chip | all ops mapped, 3.4 MiB on-chip | all ops mapped, 3.2 MiB on-chip |
 | CPU latency, this laptop | 14 ms | 9 ms | 10 ms | 9 ms |
 
 Measured with `scripts/eval_tflite.py` on the int8 file at the 87.5% center
-crop. Herps was retrained on 2026-10-10 on its 133,082 iNat2021 rows plus
+crop; the PyTorch row is the checkpoint through `scripts/distill.py`'s
+validation, which uses the same crop. Herps was retrained on 2026-10-10 on its 133,082 iNat2021 rows plus
 268,709 CC-licensed iNaturalist open-data photos (401,791 images in all),
 lifting int8 top-1 from 46.0% to 49.7%, then given 12 more epochs on the same
 401,791 images on an NVIDIA A100 (run by M. Gage Plott on a university HPC
 cluster), lifting it to 52.9%, then a further 24 epochs there (best at epoch
-23), lifting it to 54.3%. The PyTorch checkpoint now scores 55.3%, but the
-int8 file is still under the 55% target, which stands for a future run. The
+23), lifting it to 54.3%; the 55% target stands for a future run. The
 files are in `models/students/<taxon>/` with `labels.txt` (one
 "Latin name (Common name)" per line, index = class id) and `classes.json`
 (the full taxonomy per class, for roll-ups). They are also on Hugging Face
@@ -216,6 +216,7 @@ be trained with `--width 050` from the same manifests.
 | `scripts/teacher_labels.py` | Cache BioCLIP 2 soft labels for a manifest (measured not to help, kept for experiments) |
 | `scripts/eval_stock_on_inat2021.py` | Score a stock model on the iNat2021 species it shares |
 | `scripts/publish_edgeimpulse.py` | Create a public Edge Impulse BYOM project from an int8 file and labels |
+| `scripts/preprocess.py` | The 87.5% center crop every script scores and runs with |
 | `scripts/tflite_runner.py`, `scripts/labels.py` | Shared helpers |
 
 ## Project ideas for the i9-9980HK
@@ -281,8 +282,8 @@ python scripts/webcam.py --model models/keras/backyard.keras --labels models/ker
 ```
 
 Hold a phone showing an insect photo in front of the camera. The script
-center-crops the frame, overlays the top three predictions and prints the
-inference time. Press `s` to save a crop into `data/captures/`, which is a
+center-crops the frame (the middle 87.5%, drawn as a gray box), overlays the
+top three predictions and prints the inference time. Press `s` to save a crop into `data/captures/`, which is a
 quick way to collect a `not_an_insect` class or real-world test images.
 
 ## Deployment contract
@@ -302,10 +303,14 @@ board we don't cover, these are the facts you need.
 | Ops | Conv2D, DepthwiseConv2D, Add, AveragePool, FullyConnected, Softmax, Quantize/Dequantize at the edges. Nothing custom, no dynamic shapes | same |
 | Float variant | `<stem>_float32.tflite`, float32 in and out, same layout | same |
 
-Center-crop to a square before resizing; the scripts do this and accuracy
-drops if the subject is squashed. For the distilled students an 87.5% center
-crop (resize the short side to 183 px, crop 160) matches how they were
-validated and is worth about a point over using the whole frame.
+Center-crop to a square before resizing; accuracy drops if the subject is
+squashed. Every number here is measured on the middle 87.5%: resize the short
+side to 183 px for the 160 px students (256 px for the 224 px stock models),
+then crop the center. `classify.py` and `webcam.py` do this by default
+through `scripts/preprocess.py`; `--crop-frac 1.0` feeds the whole frame
+instead. The whole frame costs top-1 on every model, measured on the int8
+files: mammals 0.5 points, fungi 0.6, arachnids 2.4, birds 2.5, herps 2.8
+and insects 3.5.
 
 **Targets by tier**
 

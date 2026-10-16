@@ -18,9 +18,11 @@ import time
 
 import cv2
 import numpy as np
+from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labels import ROOT, load_finetuned_labels, load_labels  # noqa: E402
+from preprocess import CROP_FRAC, center_crop  # noqa: E402
 from tflite_runner import load_any  # noqa: E402
 
 
@@ -31,6 +33,8 @@ def main():
     ap.add_argument("--labels")
     ap.add_argument("--camera", type=int, default=0)
     ap.add_argument("--threshold", type=float, default=0.15, help="hide predictions below this probability")
+    ap.add_argument("--crop-frac", type=float, default=CROP_FRAC,
+                    help="center-crop fraction (default 0.875, how the models are scored); 1.0 = whole frame squared")
     args = ap.parse_args()
 
     model_path = args.model or os.path.join(ROOT, "models", "keras", f"{args.name}.keras")
@@ -49,10 +53,11 @@ def main():
         if not ok:
             break
         h, w = frame.shape[:2]
-        s = min(h, w)
+        s = int(min(h, w) * args.crop_frac)  # the region the model sees, drawn as the gray box
         y0, x0 = (h - s) // 2, (w - s) // 2
         crop = frame[y0 : y0 + s, x0 : x0 + s]
-        rgb = cv2.cvtColor(cv2.resize(crop, (size, size)), cv2.COLOR_BGR2RGB).astype(np.float32)
+        rgb = np.asarray(center_crop(Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)), size, args.crop_frac),
+                         dtype=np.float32)
 
         t0 = time.time()
         probs = model.predict(rgb[None], verbose=0)[0]

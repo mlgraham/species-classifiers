@@ -5,9 +5,9 @@
     python scripts/eval_tflite.py models/tflite/mammals_full_w100_int8.tflite data/manifests/mammals_full --grayscale
 
 Feeds uint8 RGB (or float32 for the float export), center-cropped and
-resized to the model's input size, exactly as classify.py does. Prints top-1
-and top-5. This is the number to quote for the shipped file; the PyTorch
-checkpoint's number is the recipe's.
+resized to the model's input size by preprocess.center_crop, exactly as
+classify.py and webcam.py do. Prints top-1 and top-5. This is the number to
+quote for the shipped file; the PyTorch checkpoint's number is the recipe's.
 """
 import argparse
 import os
@@ -19,23 +19,17 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labels import ROOT  # noqa: E402
+from preprocess import CROP_FRAC, center_crop  # noqa: E402
 from teacher_labels import read_manifest  # noqa: E402
 
 
-def load_image(path, size, grayscale, crop_frac=0.875):
-    """Resize the short side to size/crop_frac then center-crop size x size: the same 87.5% center crop the
-    training script validates with (Resize(1.14 * size) + CenterCrop(size)). --crop-frac 1.0 keeps the
-    whole image, which is what classify.py and webcam.py do."""
+def load_image(path, size, grayscale, crop_frac=CROP_FRAC):
+    """uint8 RGB array of preprocess.center_crop: the 87.5% center crop by default, the same one
+    distill.py validates with. --crop-frac 1.0 keeps the whole image, squared."""
     img = Image.open(path).convert("RGB")
     if grayscale:
         img = img.convert("L").convert("RGB")
-    w, h = img.size
-    short = int(round(size / crop_frac))
-    scale = short / min(w, h)
-    img = img.resize((max(size, round(w * scale)), max(size, round(h * scale))), Image.BILINEAR)
-    w, h = img.size
-    left, top = (w - size) // 2, (h - size) // 2
-    return np.asarray(img.crop((left, top, left + size, top + size)))
+    return np.asarray(center_crop(img, size, crop_frac))
 
 
 def main():
@@ -46,7 +40,7 @@ def main():
     ap.add_argument("--split", default="val")
     ap.add_argument("--grayscale", action="store_true")
     ap.add_argument("--limit", type=int)
-    ap.add_argument("--crop-frac", type=float, default=0.875, help="center-crop fraction; 1.0 = whole image squared")
+    ap.add_argument("--crop-frac", type=float, default=CROP_FRAC, help="center-crop fraction; 1.0 = whole image squared")
     args = ap.parse_args()
 
     import tensorflow as tf

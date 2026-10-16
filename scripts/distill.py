@@ -20,6 +20,7 @@ and prints color and grayscale val top-1 each epoch so the D2 threshold
 can be read straight off the log.
 """
 import argparse
+import functools
 import json
 import os
 import sys
@@ -34,6 +35,7 @@ from torchvision import transforms as T
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labels import ROOT, load_finetuned_labels  # noqa: E402
+from preprocess import center_crop  # noqa: E402
 from teacher_labels import read_manifest  # noqa: E402
 
 TO_MINUS1_1 = T.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # x/127.5 - 1, the Keras contract
@@ -64,10 +66,9 @@ def transforms(size, train, grayscale_p=0.0, force_gray=False):
         ]
         if grayscale_p > 0:
             ops.append(T.RandomGrayscale(p=grayscale_p))
-    else:
-        ops = [T.Resize(int(size * 1.14)), T.CenterCrop(size)]
-        if force_gray:
-            ops.append(T.Grayscale(num_output_channels=3))
+    else:  # preprocess.center_crop, so the val number is the one eval_tflite.py measures on the same weights
+        ops = [T.Grayscale(num_output_channels=3)] if force_gray else []
+        ops.append(functools.partial(center_crop, size=size))
     return T.Compose(ops + [T.ToTensor(), TO_MINUS1_1])
 
 

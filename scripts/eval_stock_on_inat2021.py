@@ -24,6 +24,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from eval_tflite import load_image  # noqa: E402
 from labels import ROOT, load_labels  # noqa: E402
+from preprocess import CROP_FRAC  # noqa: E402
 
 SUPER = {"insects_V1": "Insects", "plants_V1": "Plants", "birds_V1": "Birds"}
 
@@ -34,6 +35,7 @@ def main():
     ap.add_argument("--model", help="TFLite file (default models/tflite/<name>_int8.tflite)")
     ap.add_argument("--root", default=os.path.join(ROOT, "data", "datasets", "inat2021"))
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--crop-frac", type=float, default=CROP_FRAC, help="center-crop fraction; 1.0 = whole image squared")
     args = ap.parse_args()
 
     import tensorflow as tf
@@ -60,7 +62,7 @@ def main():
     top1 = top5 = 0
     t0 = time.time()
     for rel, name in rows:
-        x = load_image(os.path.join(args.root, rel), size, False, 0.875).astype(inp["dtype"])[None]
+        x = load_image(os.path.join(args.root, rel), size, False, args.crop_frac).astype(inp["dtype"])[None]
         interp.set_tensor(inp["index"], x)
         interp.invoke()
         scores = interp.get_tensor(out["index"])[0].astype(np.float32)
@@ -69,7 +71,7 @@ def main():
         top1 += int(order[0] == want)
         top5 += int(want in order[:5])
     n = len(rows)
-    print(f"{os.path.basename(model_path)} on matched iNat2021 val ({n} images, {len(matched)} species): "
+    print(f"{os.path.basename(model_path)} on matched iNat2021 val ({n} images, {len(matched)} species, crop {args.crop_frac}): "
           f"top-1 {top1 / n:.4f}  top-5 {top5 / n:.4f}  {(time.time() - t0) * 1000 / n:.1f} ms/image")
 
 
