@@ -13,6 +13,11 @@ Phases, each resumable from its files under data/datasets/inat_open/<taxon>/:
 
 New rows get image_id 1_000_000_000 + photo_id and a path relative to the iNat2021 root
 ("../inat_open/<taxon>/<label>/<photo_id>.jpg") so distill.py needs no new flag.
+
+--add-species appends species iNat2021 lacks (labels.txt, classes.json). Each gets
+--new-val validation photos, one from each of that many observations (lowest
+observation ids), and no other photo from those observations enters train.tsv;
+its train photos are also deduped against those validation photos.
 """
 import argparse
 import json
@@ -57,9 +62,11 @@ def log(msg):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
-def resolve(labels, path):
+def resolve(labels, path, only=None):
     done = json.load(open(path)) if os.path.exists(path) else {}
     for i, label in enumerate(labels):
+        if only is not None and i not in only:
+            continue
         if str(i) in done:
             continue
         name = label.split(" (")[0]
@@ -74,7 +81,7 @@ def resolve(labels, path):
     return done
 
 
-def list_photos(taxa, cap, path):
+def list_photos(taxa, cap, path, extra=None):
     seen_taxa = set()
     if os.path.exists(path):
         with open(path) as f:
@@ -86,7 +93,8 @@ def list_photos(taxa, cap, path):
             if label in seen_taxa or taxon_id is None:
                 continue
             got, page = 0, 1
-            while got < cap and page * 200 <= 10000:
+            limit = cap + (extra or {}).get(label, 0)
+            while got < limit and page * 200 <= 10000:
                 res = api("observations", taxon_id=taxon_id, quality_grade="research", photos="true",
                           photo_license=",".join(LICENSES), per_page=200, page=page)
                 results = res.get("results", [])
@@ -95,7 +103,7 @@ def list_photos(taxa, cap, path):
                         continue  # the query includes descendants; keep the species itself only
                     n = 0
                     for p in o.get("photos", []):
-                        if p.get("license_code") not in LICENSES or n >= 2 or got >= cap:
+                        if p.get("license_code") not in LICENSES or n >= 2 or got >= limit:
                             continue
                         url = p["url"].replace("/square.", "/medium.")
                         out.write(json.dumps({"label": label, "photo_id": p["id"], "url": url,
@@ -169,22 +177,45 @@ def main():
     ap.add_argument("--cap", type=int, default=600, help="new photos per species at most")
     ap.add_argument("--root", default=os.path.join(ROOT, "data", "datasets", "inat2021"))
     ap.add_argument("--limit-taxa", type=int, help="smoke test: only the first N labels")
+    ap.add_argument("--add-species", nargs="+", default=[], metavar="NAME", help="species to append, exact Latin names")
+    ap.add_argument("--new-val", type=int, default=10, help="held-out validation photos per added species")
     args = ap.parse_args()
 
     taxon = os.path.basename(os.path.normpath(args.manifest))
     work = os.path.join(ROOT, "data", "datasets", "inat_open", taxon)
     os.makedirs(work, exist_ok=True)
     labels = load_finetuned_labels(os.path.join(args.manifest, "labels.txt"))
-    if args.limit_taxa:
-        labels = labels[: args.limit_taxa]
+    classes_path = os.path.join(args.manifest, "classes.json")
+    classes = json.load(open(classes_path, encoding="utf-8")) if os.path.exists(classes_path) else None
+    first_new = len(labels)
+    for name in args.add_species:
+        if any(l.split(" (")[0] == name for l in labels):
+            sys.exit(f"--add-species {name} is already in {args.manifest}")
+        hits = [t for t in api("taxa", q=name, rank="species", per_page=5).get("results", []) if t["name"] == name]
+        if not hits:
+            sys.exit(f"--add-species {name}: no exact iNaturalist species match")
+        t = api(f"taxa/{hits[0]['id']}")["results"][0]
+        ranks = {a["rank"]: a["name"] for a in t.get("ancestors", [])}
+        common = t.get("preferred_common_name") or ""
+        labels.append(f"{name} ({common})" if common else name)
+        if classes is not None:
+            classes.append({"id": None, "inat_taxon_id": t["id"], "name": name, "common_name": common or name,
+                            "supercategory": classes[0]["supercategory"] if classes else None,
+                            **{k: ranks.get(k) for k in ("kingdom", "phylum", "class", "order", "family", "genus")},
+                            "specific_epithet": name.split()[-1], "image_dir_name": None, "source": "inaturalist-open-data"})
+    new_labels = set(range(first_new, len(labels)))
+    # --limit-taxa narrows what is fetched, never the label list, so added species keep their indices.
+    only = set(range(min(args.limit_taxa, first_new))) | new_labels if args.limit_taxa else None
 
     log(f"resolve {len(labels)} labels")
-    taxa = resolve(labels, os.path.join(work, "taxa.json"))
+    taxa = resolve(labels, os.path.join(work, "taxa.json"), only)
+    if only is not None:
+        taxa = {k: v for k, v in taxa.items() if int(k) in only}
     log(f"resolved {sum(v is not None for v in taxa.values())}/{len(taxa)}")
 
     photos_path = os.path.join(work, "photos.jsonl")
     log(f"list photos, cap {args.cap} per species")
-    list_photos(taxa, args.cap, photos_path)
+    list_photos(taxa, args.cap, photos_path, {i: args.new_val for i in new_labels})
     rows = [json.loads(l) for l in open(photos_path)]
     log(f"{len(rows)} photos listed")
 
@@ -210,8 +241,26 @@ def main():
                 dropped_val += 1
                 continue
             seen.add(h)
-            kept.append(r)
+            kept.append({**r, "dhash": h})
     log(f"kept {len(kept)}, dropped {dropped_val} near val, {dropped_dup} repeats, {missing} unreadable or missing")
+
+    new_val, held_obs = [], set()
+    for label in sorted(new_labels):
+        by_obs = {}
+        for r in sorted(kept, key=lambda r: (r["observation"], r["photo_id"])):
+            if r["label"] == label:
+                by_obs.setdefault(r["observation"], r)
+        picked = [by_obs[o] for o in sorted(by_obs)[: args.new_val]]
+        if len(picked) < args.new_val:
+            sys.exit(f"added label {label} ({labels[label]}): only {len(picked)} observations for validation")
+        new_val += picked
+        held_obs |= {r["observation"] for r in picked}
+    nv_h = np.array([r["dhash"] for r in new_val], dtype=np.uint64)
+    before = len(kept)
+    kept = [r for r in kept if r["observation"] not in held_obs
+            and not (r["label"] in new_labels and nv_h.size and int(popcount64(np.bitwise_xor(nv_h, np.uint64(r["dhash"]))).min()) <= 6)]
+    if new_labels:
+        log(f"added species: {len(new_val)} validation photos held out; {before - len(kept)} train photos removed with them")
 
     os.makedirs(args.out, exist_ok=True)
     train_rows = read_manifest(os.path.join(args.manifest, "train.tsv"))
@@ -220,15 +269,22 @@ def main():
             f.write(f"{image_id}\t{rel}\t{label}\n")
         for r in kept:
             f.write(f"{1_000_000_000 + r['photo_id']}\t../inat_open/{taxon}/{r['label']}/{r['photo_id']}.jpg\t{r['label']}\n")
-    for name in ("val.tsv", "labels.txt"):
-        shutil.copy(os.path.join(args.manifest, name), os.path.join(args.out, name))
+    shutil.copy(os.path.join(args.manifest, "val.tsv"), os.path.join(args.out, "val.tsv"))
+    with open(os.path.join(args.out, "val.tsv"), "a", encoding="utf-8") as f:
+        for r in new_val:
+            f.write(f"{1_000_000_000 + r['photo_id']}\t../inat_open/{taxon}/{r['label']}/{r['photo_id']}.jpg\t{r['label']}\n")
+    with open(os.path.join(args.out, "labels.txt"), "w", encoding="utf-8") as f:
+        f.write("\n".join(labels) + "\n")
+    if classes is not None:
+        json.dump(classes, open(os.path.join(args.out, "classes.json"), "w", encoding="utf-8"), indent=1)
     per = {}
     for r in kept:
         per[r["label"]] = per.get(r["label"], 0) + 1
     counts = sorted(per.values())
     json.dump({"source_train": len(train_rows), "new": len(kept), "species_with_new": len(per),
                "new_per_species_min": counts[0] if counts else 0, "new_per_species_median": counts[len(counts) // 2] if counts else 0,
-               "dropped_near_val": dropped_val, "dropped_repeats": dropped_dup, "cap": args.cap},
+               "dropped_near_val": dropped_val, "dropped_repeats": dropped_dup, "cap": args.cap,
+               "added_species": len(new_labels), "added_val": len(new_val)},
               open(os.path.join(args.out, "fetch_summary.json"), "w"), indent=1)
     log(f"wrote {args.out}/train.tsv: {len(train_rows)} + {len(kept)} = {len(train_rows) + len(kept)} rows")
 

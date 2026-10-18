@@ -94,7 +94,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--root", default=os.path.join(ROOT, "data", "datasets", "inat2021"))
     ap.add_argument("--size", type=int, default=160)
-    ap.add_argument("--width", default="050", help="timm mobilenetv2 width suffix: 035, 050, 075, 100")
+    ap.add_argument("--width", default="050", help="timm mobilenetv2 width suffix: 035, 050, 075, 100, 140")
     ap.add_argument("--init", help="backbone init from scripts/keras_to_torch.py (models/torch/init_<name>.pt) instead of ImageNet")
     ap.add_argument("--resume", help="warm restart: load every weight, classifier included, from a models/torch/<out>.pt saved by this script; the schedule (warmup + cosine at --lr) starts over")
     ap.add_argument("--epochs", type=int, default=30)

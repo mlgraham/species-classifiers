@@ -76,7 +76,7 @@ def main():
     ck = torch.load(args.checkpoint, map_location="cpu")
     cfg, labels = ck["config"], ck["labels"]
     size, width = cfg["size"], cfg["width"]
-    alpha = {"035": 0.35, "050": 0.5, "075": 0.75, "100": 1.0}[width]
+    alpha = {"035": 0.35, "050": 0.5, "075": 0.75, "100": 1.0, "140": 1.4}[width]
 
     student = timm.create_model(f"mobilenetv2_{width}", pretrained=False, num_classes=len(labels), pad_type="same")
     for module in student.modules():
