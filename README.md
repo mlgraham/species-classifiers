@@ -138,7 +138,10 @@ library yet).
 **Recipe.** MobileNetV2 at full width and 160 px, initialized from timm's
 ImageNet weights, trained with hard labels for 12 epochs on the full
 iNat2021 training split with random crops, flips, color jitter and (for
-mammals and herps) 20% random grayscale so the model holds up on a monochrome camera.
+mammals and herps) 20% random grayscale so the model holds up on a monochrome
+or infrared-lit camera, such as a trail camera at night. The grayscale share
+follows the target camera: a model for a known color camera trains on color
+only.
 Trained in PyTorch on the laptop's Radeon through MPS, moved into Keras with
 a positional weight transplant that verifies to a millionth, then exported
 exactly like the stock models. About 2.5 hours for mammals, 1.5 for
@@ -256,11 +259,14 @@ an evening to a weekend of compute.
    Small dataset, immediate feedback and it's the kind of model the Coral
    board can run unattended.
 
-5. **Grayscale-robust model for the Dev Board Micro.** The Micro's camera is
-   monochrome, so the stock RGB model loses accuracy there. Add a random
-   grayscale augmentation in `finetune.py` (or train on grayscale replicated
-   to three channels) and compare int8 accuracy on held-out photos before
-   and after. Cheap to run, and it directly improves the on-device result.
+5. **Grayscale-robust model for a monochrome or infrared-lit camera.** The
+   stock models were evidently trained on color only: on grayscale input the
+   insect model keeps 17% of its species accuracy (51/740 against 302/740 on
+   the hive species), where the 20%-grayscale students keep about 80%. Add a
+   random grayscale augmentation in `finetune.py` (or train on grayscale
+   replicated to three channels) and compare int8 accuracy on held-out photos
+   before and after. Worth it for trail cameras and night work, not for a
+   color camera in daylight.
 
 6. **Another taxon.** iNat2021 has reptiles (313 species), amphibians (170),
    fungi (341), fish, mollusks. The student recipe above is one command per
@@ -368,9 +374,10 @@ for the four students are already in `models/students/`.
    [coralmicro](https://github.com/google-coral/coralmicro) `classify_images`
    or `camera` example, replace its label file with
    `models/keras/<out>_labels.txt`, build with the coralmicro CMake toolchain
-   and flash. The camera delivers 324x324 monochrome frames, so resize to
-   the model's input size (224 for the stock models, 160 for the students)
-   and replicate the channel. See idea 5 above.
+   and flash. The camera is a 324x324 color sensor: coralmicro demosaics its
+   Bayer frames to RGB (`CameraFormat::kRgb`; `kY8` gives grayscale), so
+   request RGB and resize to the model's input size (224 for the stock
+   models, 160 for the students).
 
 For a Raspberry Pi or any Linux box with a USB Accelerator the same
 `_edgetpu.tflite` runs through
