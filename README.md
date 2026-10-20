@@ -107,8 +107,8 @@ crop; the PyTorch row is the checkpoint through `scripts/distill.py`'s
 validation, which uses the same crop. Herps was retrained on 2026-10-10 on its 133,082 iNat2021 rows plus
 268,709 CC-licensed iNaturalist open-data photos (401,791 images in all),
 lifting int8 top-1 from 46.0% to 49.7%, then given 12 more epochs on the same
-401,791 images on an NVIDIA A100 (run by M. Gage Plott on a university HPC
-cluster), lifting it to 52.9%, then a further 24 epochs there (best at epoch
+401,791 images on an NVIDIA A100 at a university HPC cluster, with access
+provided by M. Gage Plott, lifting it to 52.9%, then a further 24 epochs there (best at epoch
 23), lifting it to 54.3%; the 55% target stands for a future run. The
 files are in `models/students/<taxon>/` with `labels.txt` (one
 "Latin name (Common name)" per line, index = class id) and `classes.json`
