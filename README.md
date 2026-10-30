@@ -3,8 +3,10 @@
 Species classifiers small enough for microcontrollers and the Coral Edge
 TPU: Google's three iNaturalist models from the discontinued AIY Vision Kit,
 rescued as trainable weights, plus four new ones trained here on the same
-recipe for the taxa Google never shipped. All seven are plain MobileNetV2
-with a full-integer int8 export and one deployment contract.
+recipe for the taxa Google never shipped and three hive guards that tell
+honeybees from the hornets and yellowjackets that hunt them. All ten are
+plain MobileNetV2 with a full-integer int8 export and one deployment
+contract.
 
 | Model | Classes | Input | int8 file | Where it came from |
 |---|---|---|---|---|
@@ -15,9 +17,12 @@ with a full-integer int8 export and one deployment contract.
 | `arachnids` | 153 species | 160 px | 2.9 MB | trained here on iNat2021, `models/students/arachnids/` |
 | `herps` | 483 species (313 reptiles, 170 amphibians) | 160 px | 3.3 MB | trained here on iNat2021, `models/students/herps/` |
 | `fungi` | 341 species | 160 px | 3.1 MB | trained here on iNat2021, `models/students/fungi/`. Not for edibility decisions |
+| `hive` | 265 bee, wasp and predator species, 12 hive roles | 160 px | 3.0 MB | trained on iNat2021 + iNaturalist open data, `models/students/hive/` |
+| `hive_coral` | same 265 | 224 px | 5.5 MB | same data, width 1.4, built for the Edge TPU, `models/students/hive_coral/` |
+| `hive_esp32s3` | same 265 | 128 px | 3.1 MB | same data, for ESP32-S3 boards such as the XIAO ESP32S3 Sense, `models/students/hive_esp32s3/` |
 
 Nothing here needs the Vision Bonnet. Everything runs on a laptop CPU, the
-int8 files run as is on anything with TensorFlow Lite Micro, and all seven
+int8 files run as is on anything with TensorFlow Lite Micro, and all ten
 compile for the Edge TPU with every op mapped.
 
 ## Where the weights came from
@@ -199,7 +204,97 @@ Width was kept at 1.0 deliberately. A 0.5-width model would run live-rate
 on an ESP32-S3 and fit the small Ethos-U55 modules, but it gives up about
 six points, and the full-width file still runs on an S3 with PSRAM at a
 frame every second or two. If a "micro" variant turns out to matter it can
-be trained with `--width 050` from the same manifests.
+be trained with `--width 050` from the same manifests. The hive models
+measured the tradeoff again: a 0.5-width model at 160 px (49M MACs) scored
+52.9% species top-1 against 66.8% for full width at 128 px (98M MACs), so
+`hive_esp32s3` shrinks the input, not the width.
+
+## The hive models
+
+A hive guard: point a camera at a honeybee hive's entrance and tell the bees
+from what hunts them. The model names one of 265 species and its classes roll
+up to 12 roles, which is the answer a device acts on:
+
+| Role | Kind | What it covers |
+|---|---|---|
+| honeybee | protected | *Apis*, the bees being protected |
+| hornet | threat | *Vespa*, which hunt honeybees at the entrance |
+| yellowjacket | threat | *Vespula* and *Dolichovespula*, which raid weak hives |
+| paper wasp, robber fly, beewolf, mantis, ant | predator | *Polistes* and relatives, Asilidae, *Philanthus*, Mantodea, Formicidae |
+| hoverfly | mimic | Syrphidae, bee and wasp mimics |
+| bumblebee, other bee, other wasp | benign | *Bombus*, every other bee family, the remaining Hymenoptera |
+
+`roles.json` in each model directory maps every output index to its role.
+The role score is the sum of its species' probabilities and the decision is
+the highest role score; there is no threshold or timing rule built in, so
+add your own (for example, a threat on several frames in a row).
+`scripts/roles.py` and `scripts/eval_roles.py` do the same roll-up in
+Python.
+
+Three files, one per kind of hardware, all with the same classes:
+
+| | `hive` | `hive_coral` | `hive_esp32s3` |
+|---|---|---|---|
+| Target | every tier, the universal contract | Coral Edge TPU (Dev Board Micro, USB Accelerator) | ESP32-S3 with PSRAM (XIAO ESP32S3 Sense) |
+| Network | MobileNetV2 1.0, 160 px | MobileNetV2 1.4, 224 px | MobileNetV2 1.0, 128 px |
+| Compute (Vela count) | 153M MACs | not counted | 98M MACs |
+| Species top-1 / top-5, color | 71.4% / 90.4% | 80.9% / 94.3% | 66.8% / 88.3% |
+| Role accuracy, color | 91.7% | 95.7% | 89.3% |
+| Threats caught, color (hornet + yellowjacket) | 321 of 360 (89.2%) | 344 of 360 (95.6%) | 318 of 360 (88.3%) |
+| Honeybees called a threat, color | 2 of 60 | 1 of 60 | 1 of 60 |
+| Species top-1, grayscale input | 54.1% | 25.4% | 14.6% |
+| Threats caught, grayscale | 281 of 360 (78.1%) | 196 of 360 (54.4%) | 144 of 360 (40.0%) |
+| Edge TPU | all ops mapped, 3.1 MiB on-chip | all ops mapped, 5.6 MiB on-chip | all ops mapped, 3.1 MiB on-chip |
+| CPU latency, this laptop | 9 ms | 14 ms | 8 ms |
+
+Measured on the int8 files over 2,650 validation images (10 per species, at
+the 87.5% crop) with `scripts/eval_tflite.py` for species and
+`scripts/eval_roles.py` for roles. For comparison, Google's stock insect
+model, rolled up the same way, gets 35.7% of roles right and catches 117 of
+the 360 threats (32.5%), while calling none of the 60 honeybees a threat.
+
+`hive` trained with 20% random grayscale and holds up on a monochrome or
+infrared-lit camera. `hive_coral` and `hive_esp32s3` target color cameras
+(the Dev Board Micro's sensor and the XIAO's OV3660 are both color) and
+trained on color only, which is why they fall apart in grayscale; use `hive`
+for a mono camera. `hive_esp32s3` was picked over a 0.5-width model at
+160 px with half its compute, which caught 287 of the 360 threats and called
+5 of the 60 honeybees a threat. Its speed on the S3 has not been measured
+yet: scaling Espressif's published
+[esp-dl figure](https://github.com/espressif/esp-dl/tree/master/models/imagenet_cls)
+for MobileNetV2 at 224 px (438 ms on one core) by compute gives an estimate
+of roughly 140 ms a frame, which is plenty for watching an entrance.
+
+**Data and training.** The 239 species of iNat2021's Hymenoptera, robber
+flies, hoverflies and mantises, plus 26 *Vespa*, *Vespula*,
+*Dolichovespula* and *Apis* species iNat2021 lacks (among them *Vespa
+mandarinia* and *Vespa orientalis*). 215,799 training images: the iNat2021
+train split for those species plus up to 600 CC-licensed research-grade
+iNaturalist open-data photos per species, near-duplicates of any validation
+photo removed. The added species are validated on 10 photos from 10
+observations none of whose photos are in training. No region filter: the
+model covers the world's hive threats. Trained from timm's ImageNet weights
+on an NVIDIA A100 at a university HPC cluster, with access provided by
+M. Gage Plott: 12 epochs, then a 24-epoch warm restart, keeping the best
+epoch on validation (epoch 35, 34 and 30 overall for `hive`, `hive_coral`
+and `hive_esp32s3`).
+
+**What these numbers are not.** One training run per model, picked on the
+same validation set it is scored on, with 10 images per species and 60
+honeybee images; a field false-alarm rate needs footage from a real hive
+entrance, which is the next test. None of the three has been timed on its
+board yet.
+
+All three are in the
+[v0.2.0 release](https://github.com/mlgraham/species-classifiers/releases/tag/v0.2.0)
+with float32 builds, a Vela build of `hive` for the Grove Vision AI V2 and
+`hive_roles.json`; on Hugging Face as
+[species-classifier-hive](https://huggingface.co/mlgraham/species-classifier-hive);
+on Kaggle as the TfLite variations `hive`, `hive-coral` and `hive-esp32s3`
+of [mgraham0/species-classifiers](https://www.kaggle.com/models/mgraham0/species-classifiers);
+and as public Edge Impulse projects for
+[hive](https://studio.edgeimpulse.com/public/1152992/latest) and
+[hive_esp32s3](https://studio.edgeimpulse.com/public/1152994/latest).
 
 ## Scripts
 
@@ -298,12 +393,12 @@ Everything downstream of this repo consumes one artifact: a full-integer
 TFLite file from `scripts/export_tflite.py`. If you are converting it for a
 board we don't cover, these are the facts you need.
 
-| | Stock models | Students (mammals, arachnids, herps, fungi) and your fine-tunes |
+| | Stock models | Students (mammals, arachnids, herps, fungi, hive) and your fine-tunes |
 |---|---|---|
-| Input tensor | `[1, 224, 224, 3]` uint8, RGB, NHWC | `[1, 160, 160, 3]` uint8, RGB, NHWC (default) |
+| Input tensor | `[1, 224, 224, 3]` uint8, RGB, NHWC | `[1, 160, 160, 3]` uint8, RGB, NHWC (default); `hive_coral` 224, `hive_esp32s3` 128 |
 | Input range | 0 to 255, no normalization. The model rescales to -1..1 internally | same |
 | Input quantization | scale 1.0, zero point 0 | same |
-| Output tensor | `[1, 1022]` uint8 for insects (1022 = 1021 species + background), `[1, 2102]` plants, `[1, 965]` birds | `[1, 246]` mammals, `[1, 153]` arachnids, `[1, 483]` herps, `[1, 341]` fungi; `[1, N]` with N = lines in the labels file for your own |
+| Output tensor | `[1, 1022]` uint8 for insects (1022 = 1021 species + background), `[1, 2102]` plants, `[1, 965]` birds | `[1, 246]` mammals, `[1, 153]` arachnids, `[1, 483]` herps, `[1, 341]` fungi, `[1, 265]` hive models; `[1, N]` with N = lines in the labels file for your own |
 | Output meaning | softmax probabilities, quantized with scale 1/256 and zero point 0, so `prob = value / 256` | same |
 | Label index | row `id` in `models/tfhub/<name>/labelmap.csv`; `background` is the last index | line number in `models/students/<taxon>/labels.txt` (or `models/keras/<out>_labels.txt` for your own); no background class |
 | Ops | Conv2D, DepthwiseConv2D, Add, AveragePool, FullyConnected, Softmax, Quantize/Dequantize at the edges. Nothing custom, no dynamic shapes | same |
@@ -311,8 +406,9 @@ board we don't cover, these are the facts you need.
 
 Center-crop to a square before resizing; accuracy drops if the subject is
 squashed. Every number here is measured on the middle 87.5%: resize the short
-side to 183 px for the 160 px students (256 px for the 224 px stock models),
-then crop the center. `classify.py` and `webcam.py` do this by default
+side to 183 px for the 160 px students (256 px for the 224 px stock models
+and `hive_coral`, 146 px for `hive_esp32s3`), then crop the center.
+`classify.py` and `webcam.py` do this by default
 through `scripts/preprocess.py`; `--crop-frac 1.0` feeds the whole frame
 instead. The whole frame costs top-1 on every model, measured on the int8
 files: mammals 0.5 points, fungi 0.6, arachnids 2.4, birds 2.5, herps 2.8
@@ -346,9 +442,10 @@ and parameters fully cached on-chip.
 ## Deploying to the Coral Dev Board Micro
 
 The Dev Board Micro runs TensorFlow Lite Micro on a Cortex-M7 with an Edge
-TPU coprocessor, 64 MB RAM and 128 MB flash. The int8 files are 3 to 5.4 MB,
+TPU coprocessor, 64 MB RAM and 128 MB flash. The int8 files are 3 to 5.5 MB,
 so every model here fits comfortably. The compiled `_edgetpu.tflite` files
-for the four students are already in `models/students/`.
+for the students are already in `models/students/`; for a hive guard use
+`hive_coral`, which was built for this board.
 
 1. Export int8 TFLite with representative images from your dataset:
 
@@ -377,7 +474,8 @@ for the four students are already in `models/students/`.
    and flash. The camera is a 324x324 color sensor: coralmicro demosaics its
    Bayer frames to RGB (`CameraFormat::kRgb`; `kY8` gives grayscale), so
    request RGB and resize to the model's input size (224 for the stock
-   models, 160 for the students).
+   models and `hive_coral`, 128 for `hive_esp32s3`, 160 for the other
+   students).
 
 For a Raspberry Pi or any Linux box with a USB Accelerator the same
 `_edgetpu.tflite` runs through

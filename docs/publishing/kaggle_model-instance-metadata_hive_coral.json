@@ -1,0 +1,17 @@
+{
+  "ownerSlug": "mgraham0",
+  "modelSlug": "species-classifiers",
+  "instanceSlug": "hive-coral",
+  "framework": "tfLite",
+  "overview": "Hive guard for the Coral Edge TPU: 265 bee, wasp, hornet and predator species, MobileNetV2 1.4/224 int8. 80.9% species top-1 / 94.3% top-5, role accuracy 95.7%, 95.6% of threats caught, 1 of 60 honeybees called a threat.",
+  "usage": "# Model Format\n\n`hive_coral_int8.tflite`: full-integer TFLite, uint8 in and out, built for the Coral Edge TPU (Dev Board Micro, USB Accelerator): every op mapped, 5.6 MiB cached on-chip. `hive_coral_int8_edgetpu.tflite`: compiled with Edge TPU compiler 16.0, every op mapped. `hive_coral_float32.tflite`: float in and out. `labels.txt`: one class per line, \"Latin name (Common name)\", line number = class index. `classes.json`: full taxonomy per class. `roles.json`: the hive role of every output index (honeybee, hornet, yellowjacket, paper wasp, robber fly, beewolf, mantis, ant, hoverfly, bumblebee, other bee, other wasp) and each role's kind (protected, threat, predator, mimic, benign).\n\n# Training Data\n\nThe 239 species of iNaturalist 2021's Hymenoptera, robber flies, hoverflies and mantises plus 26 Vespa, Vespula, Dolichovespula and Apis species iNat2021 lacks: 215,799 training images, the iNat2021 train split for those species plus up to 600 CC-licensed research-grade iNaturalist open-data photos per species, near-duplicates of validation photos removed. Initialized from timm's ImageNet weights. 12 epochs, then a 24-epoch warm restart keeping the best epoch on validation (epoch 34 overall), random resized crops, flips, color jitter (color only), on an NVIDIA A100 at a university HPC cluster, with access provided by M. Gage Plott.\n\n# Model Inputs\n\n[1, 224, 224, 3] uint8 RGB, 0 to 255, no normalization (the model rescales internally). Center-crop to a square; an 87.5% center crop (short side to 256, crop 224) matches validation.\n\n# Model Outputs\n\n[1, 265] uint8 probabilities, scale 1/256 and zero point 0 (prob = value / 256). No background class. A role's score is the sum of its species' probabilities (roles.json); the decision is the highest role score, with no threshold or timing rule built in.\n\n# Model Usage\n\nMeasured on the int8 file over 2,650 validation images (10 per species, 87.5% center crop): 80.9% species top-1 / 94.3% top-5, role accuracy 95.7%, threats caught 344 of 360 (95.6%), honeybees called a threat 1 of 60. Trained on color only for color cameras; in grayscale it falls to 25.4% species top-1. Google's stock AIY insect model, rolled up the same way, catches 117 of the 360 threats. One training run, picked on the same validation set; not yet field-tested at a hive. Any tf.lite.Interpreter works; the GitHub README has scripts (classify.py, eval_tflite.py, eval_roles.py). Full hardware notes: https://github.com/mlgraham/species-classifiers#the-hive-models\n\n# Fine-tuning\n\nRe-train with scripts/distill.py in the GitHub repository.\n\n# Changelog\n\nv1 (2026-10-30): matches GitHub release v0.2.0 (sha256 in SHA256SUMS.txt there) and Hugging Face mlgraham/species-classifier-hive.\n",
+  "licenseName": "Apache 2.0",
+  "fineTunable": true,
+  "trainingData": [
+    "iNaturalist 2021 competition dataset",
+    "iNaturalist open data"
+  ],
+  "modelInstanceType": "ExternalVariant",
+  "baseModelInstanceId": 0,
+  "externalBaseModelUrl": "https://huggingface.co/timm/mobilenetv2_140.ra_in1k"
+}

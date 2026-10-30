@@ -24,7 +24,11 @@ DESCRIPTIONS = {
     "arachnids": "153-species arachnid classifier (spiders, scorpions, ticks), MobileNetV2 1.0 at 160 px, int8. 62.3% top-1 / 86.4% top-5 on iNat2021 val. Source and recipe: github.com/mlgraham/species-classifiers. One of four species classifiers here (mammals, arachnids, herps, fungi), all public; Google's AIY insect, plant and bird models are in the same GitHub repo.",
     "herps": "483-species reptile and amphibian classifier, MobileNetV2 1.0 at 160 px, int8. 54.3% top-1 / 80.5% top-5 on iNat2021 val (42.0% in grayscale). Source and recipe: github.com/mlgraham/species-classifiers. One of four species classifiers here (mammals, arachnids, herps, fungi), all public; Google's AIY insect, plant and bird models are in the same GitHub repo.",
     "fungi": "341-species fungus classifier, MobileNetV2 1.0 at 160 px, int8. 74.0% top-1 / 93.5% top-5 on iNat2021 val. NOT for edibility decisions. Source and recipe: github.com/mlgraham/species-classifiers. One of four species classifiers here (mammals, arachnids, herps, fungi), all public; Google's AIY insect, plant and bird models are in the same GitHub repo.",
+    "hive": "Hive guard for a camera at a honeybee hive entrance: 265 bee, wasp, hornet and predator species, MobileNetV2 1.0 at 160 px, int8. 71.4% species top-1 / 90.4% top-5 on 2,650 val images; rolled up to roles it catches 89.2% of hornets and yellowjackets and calls 2 of 60 honeybees a threat. Sum the class scores per role with roles.json from github.com/mlgraham/species-classifiers (models/students/hive). Holds up in grayscale (54.1% top-1). hive_esp32s3 is the smaller ESP32-S3 version.",
+    "hive_esp32s3": "Hive guard for ESP32-S3 boards with PSRAM (XIAO ESP32S3 Sense) and a color camera: 265 bee, wasp, hornet and predator species, MobileNetV2 1.0 at 128 px, int8. 66.8% species top-1 / 88.3% top-5 on 2,650 val images; rolled up to roles it catches 88.3% of hornets and yellowjackets and calls 1 of 60 honeybees a threat. Sum the class scores per role with roles.json from github.com/mlgraham/species-classifiers (models/students/hive_esp32s3). Color only; use the hive project for a mono camera.",
 }
+
+RELEASES = {"hive": "v0.2.0", "hive_esp32s3": "v0.2.0"}
 
 
 def headers():
@@ -58,7 +62,7 @@ def publish(taxon, pid=None):
     tflite = os.path.join(ROOT, "models", "students", taxon, f"{taxon}_int8.tflite")
 
     if pid is None:
-        created = call("POST", "/projects/create", json={"projectName": f"species-classifier-{taxon}", "projectVisibility": "public", "createApiKey": False})
+        created = call("POST", "/projects/create", json={"projectName": f"species-classifier-{taxon.replace('_', '-')}", "projectVisibility": "public", "createApiKey": False})
         pid = created["id"]
         print(f"{taxon}: project {pid} created")
     call("POST", f"/{pid}", json={"description": DESCRIPTIONS[taxon], "projectVisibility": "public", "publicProjectListed": True})
@@ -76,7 +80,7 @@ def publish(taxon, pid=None):
     })
     print(f"{taxon}: saved as image classifier with {len(labels)} labels")
 
-    ver = call("POST", f"/{pid}/jobs/version", json={"description": "v0.1.0, matches GitHub release and Hugging Face", "makePublic": True})
+    ver = call("POST", f"/{pid}/jobs/version", json={"description": f"{RELEASES.get(taxon, 'v0.1.0')}, matches GitHub release and Hugging Face", "makePublic": True})
     wait_job(pid, ver["id"], "version")
     versions = call("GET", f"/{pid}/versions")["versions"]
     v = max(versions, key=lambda x: x["id"])
