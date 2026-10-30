@@ -42,13 +42,17 @@ _last_call = [0.0]
 
 
 def api(path, **params):
-    """One request per second, retries on 429 and 5xx."""
+    """One request per second, retries on 429, 5xx and dropped connections."""
     for attempt in range(6):
         wait = 1.0 - (time.time() - _last_call[0])
         if wait > 0:
             time.sleep(wait)
         _last_call[0] = time.time()
-        r = requests.get(f"{API}/{path}", params=params, headers=UA, timeout=60)
+        try:
+            r = requests.get(f"{API}/{path}", params=params, headers=UA, timeout=60)
+        except requests.exceptions.RequestException:  # dropped connections and timeouts: back off and retry
+            time.sleep(10 * (attempt + 1))
+            continue
         if r.status_code == 200:
             return r.json()
         if r.status_code in (429, 500, 502, 503, 504):
